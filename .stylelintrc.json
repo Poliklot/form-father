@@ -1,0 +1,18 @@
+{
+	"extends": ["stylelint-config-standard-scss", "stylelint-config-rational-order"],
+	"plugins": ["stylelint-scss", "stylelint-order", "stylelint-selector-bem-pattern"],
+	"rules": {
+		"no-descending-specificity": null,
+		"selector-class-pattern": null,
+		"declaration-block-no-redundant-longhand-properties": null,
+		"media-feature-range-notation": "prefix",
+		"plugin/selector-bem-pattern": {
+			"componentName": "[A-Z]+",
+			"componentSelectors": {
+				"initial": "^\\.{componentName}(?:-[a-z]+)?$",
+				"combined": "^\\.combined-{componentName}-[a-z]+$"
+			},
+			"utilitySelectors": "^\\.util-[a-z]+$"
+		}
+	}
+}

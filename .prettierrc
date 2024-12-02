@@ -1,0 +1,60 @@
+{
+	"endOfLine": "lf",
+	"insertFinalNewline": true,
+	"printWidth": 120,
+	"trimTrailingWhitespace": true,
+	"charset": "utf-8",
+	"overrides": [
+		{
+			"files": "*.hbs",
+			"options": {
+				"indent_style": "tab",
+				"parser": "angular",
+				"tabWidth": 4
+			}
+		},
+		{
+			"files": "*.html",
+			"options": {
+				"indent_style": "tab",
+				"htmlWhitespaceSensitivity": "strict",
+				"tabWidth": 4
+			}
+		},
+		{
+			"files": "*.js",
+			"options": {
+				"indent_style": "tab",
+				"tabWidth": 2
+			}
+		},
+		{
+			"files": ["package.json", "*.yml", "*.cjson"],
+			"options": {
+				"indent_style": "tab",
+				"tabWidth": 2
+			}
+		},
+		{
+			"files": ["*.scss"],
+			"options": {
+				"indent_style": "tab",
+				"tabWidth": 4
+			}
+		}
+	],
+	"arrowParens": "avoid",
+	"htmlWhitespaceSensitivity": "ignore",
+	"jsxSingleQuote": true,
+	"proseWrap": "always",
+	"quoteProps": "as-needed",
+	"singleQuote": true,
+	"useTabs": true,
+	"plugins": ["./node_modules/prettier-plugin-jsdoc/dist/index.js"],
+	"jsdocSeparateTagGroups": true,
+	"jsdocCapitalizeDescription": false,
+	"scss": {
+		"emptyLineBetweenBlocks": true,
+		"indentWidth": 10
+	}
+}
