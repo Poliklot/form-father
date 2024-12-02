@@ -1,6 +1,6 @@
 {
 	"name": "form-father",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"description": "Form Father: Библиотека для обработки форм",
 	"main": "index.js",
 	"types": "index.d.ts",
