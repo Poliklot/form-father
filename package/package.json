@@ -1,0 +1,24 @@
+{
+	"name": "form-father",
+	"version": "0.0.3",
+	"description": "Form Father: Библиотека для обработки форм",
+	"main": "index.js",
+	"types": "index.d.ts",
+	"keywords": [
+		"form",
+		"vanilla",
+		"javascript",
+		"typescript",
+		"validation",
+		"library"
+	],
+	"author": "Poliklot",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/poliklot/form-father.git"
+	},
+	"bugs": {
+		"url": "https://github.com/poliklot/form-father/issues"
+	}
+}
