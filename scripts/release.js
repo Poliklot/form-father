@@ -52,7 +52,7 @@ fs.writeFileSync('./copiedItems.json', JSON.stringify(copiedItems, null, '\t'));
 console.log('Публикация на npm...');
 execSync('npm pack', { stdio: 'inherit', cwd: './package' });
 // Если хотите опубликовать на npmjs.com, раскомментируйте следующую строку:
-// execSync('npm publish', { stdio: 'inherit' });
+// execSync('npm publish', { stdio: 'inherit', cwd: './package' });
 
 // Удаляем скопированные файлы и директории из корня после публикации
 console.log('Очистка корневой директории...');
