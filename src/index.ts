@@ -51,6 +51,9 @@ interface FormOptions {
 
 	/** Цвет лоадера. */
 	loaderColor?: string;
+
+	/** Нужно ли выводить данные в консоль. По умолчанию `false`. */
+	logging?: boolean;
 }
 
 interface ErrorResponse {
@@ -98,6 +101,7 @@ export default class Form {
 			loaderColor: '#fff',
 			showLoaderButton: true,
 			scrollToFirstErroredInput: true,
+			logging: false,
 		};
 
 		this.config = Object.assign({}, defaultConfig, this.options);
@@ -137,9 +141,9 @@ export default class Form {
 
 				this.config.onSubmit?.(this);
 				this.waitResponse = true;
-				// Этот код для тестирования
-				// for (const key of data.keys()) console.log(data.get(key));
-				// END Этот код для тестирования
+				if (this.config.logging) {
+					for (const key of data.keys()) console.log(data.get(key));
+				}
 				const response = await sendData(data);
 				const responseBody: ResponseBody = await response.json();
 				this.waitResponse = false;

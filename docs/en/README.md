@@ -45,6 +45,7 @@ const form = new Form(formElement, options);
 - **scrollToFirstErroredInput**: Whether to scroll to the first input with an error. Defaults to `true`.
 - **customTypeError**: Custom error type.
 - **loaderColor**: Color of the loader in the submit button.
+- **logging**: Specifies whether to log data to the console. Defaults to false.
 
 ## Methods
 

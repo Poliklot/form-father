@@ -45,6 +45,7 @@ const form = new Form(formElement, options);
 - **scrollToFirstErroredInput**: Прокручивать ли к первому полю с ошибкой. По умолчанию `true`.
 - **customTypeError**: Кастомный тип ошибки.
 - **loaderColor**: Цвет лоадера в кнопке отправки.
+- **logging**: Нужно ли выводить данные в консоль. По умолчанию `false`.
 
 ## Методы
 
