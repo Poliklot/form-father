@@ -21,6 +21,12 @@ npm install form-father
 ```javascript
 import Form from 'form-father';
 
+Form.setDefaultParams({
+  showLoaderButton: false,
+  scrollToFirstErroredInput: false,
+  logging: true,
+});
+
 const formElement = document.querySelector('#myForm');
 const options = {
 	onSubmit: formInstance => {
@@ -50,6 +56,7 @@ const form = new Form(formElement, options);
 ## Методы
 
 - **clearInputs()**: Очищает все поля ввода формы.
+- **setDefaultParams(params)**: Метод setDefaultParams используется для установки значений по умолчанию для всех экземпляров формы. Эти параметры можно переопределить при инициализации конкретной формы.
 
 ## Хелперы
 
@@ -81,3 +88,5 @@ const form = new Form(formElement, options);
 ## Лицензия
 
 [MIT](LICENSE)
+
+© 2024 Poliklot

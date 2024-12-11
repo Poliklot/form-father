@@ -21,6 +21,12 @@ npm install form-father
 ```javascript
 import Form from 'form-father';
 
+Form.setDefaultParams({
+  showLoaderButton: false,
+  scrollToFirstErroredInput: false,
+  logging: true,
+});
+
 const formElement = document.querySelector('#myForm');
 const options = {
 	onSubmit: formInstance => {
@@ -50,6 +56,7 @@ const form = new Form(formElement, options);
 ## Methods
 
 - **clearInputs()**: Clears all input fields in the form.
+- **setDefaultParams(params):** The setDefaultParams method is used to set default values for all instances of the form. These parameters can be overridden when initializing a specific form.
 
 ## Helpers
 
@@ -83,4 +90,4 @@ submit [pull requests](https://github.com/poliklot/form-father/pulls).
 
 ---
 
-© 2023 Poliklot
+© 2024 Poliklot

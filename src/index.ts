@@ -85,6 +85,8 @@ export default class Form {
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
 	private $licensesCheckbox: HTMLInputElement | null = null;
 
+    private static defaultParams: Partial<FormOptions> = {};
+
 	/**
 	 * Создать форму.
 	 *
@@ -107,7 +109,8 @@ export default class Form {
 			logging: false,
 		};
 
-		this.config = Object.assign({}, defaultConfig, this.options);
+        /* Слияние параметров: глобальные параметры → пользовательские параметры */
+        this.config = Object.assign({}, defaultConfig, Form.defaultParams, options);
 
 		if (this.$el) {
 			this.$submit = this.$el.querySelector('input[type="submit"], button[type="submit"]');
@@ -115,6 +118,21 @@ export default class Form {
 		} else {
 			console.warn('Empty $el');
 		}
+	}
+
+	public getOptions(): FormOptions {
+		return this.options;
+	}
+
+	/**
+	 * Обновляет параметры по умолчанию для настроек формы.
+	 * Метод объединяет переданные параметры с уже существующими параметрами по умолчанию.
+	 *
+	 * @param {Partial<FormOptions>} params - Объект, содержащий новые значения параметров.
+	 * Можно передать только те свойства, которые необходимо обновить; остальные сохранятся без изменений.
+	 */
+	public static setDefaultParams(params: Partial<FormOptions>) {
+		this.defaultParams = { ...this.defaultParams, ...params };
 	}
 
 	private initialization() {
