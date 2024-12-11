@@ -1,10 +1,10 @@
 import {
 	serializeToFormData,
-	isPhoneValidOnlyThisProject,
 	isEmailValid,
 	isUrlValid,
 	parseCommonResponseProperties,
 	closest,
+	isPhoneValid,
 } from './helpers';
 
 /** Параметры формы. */
@@ -54,6 +54,9 @@ interface FormOptions {
 
 	/** Нужно ли выводить данные в консоль. По умолчанию `false`. */
 	logging?: boolean;
+
+	/** Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров телефонов. */
+	validatePhone?: (input: HTMLInputElement) => boolean;
 }
 
 interface ErrorResponse {
@@ -323,7 +326,8 @@ export default class Form {
 						}
 					}
 					if (inputType === 'tel') {
-						if (!isPhoneValidOnlyThisProject($input)) {
+						const isPhoneValidChecker = this.config.validatePhone || (($input: HTMLInputElement) => {return isPhoneValid($input.value)});
+						if (!isPhoneValidChecker($input)) {
 							this.showError($input, 'Неверный формат');
 							inputsList.push($input);
 							isCorrect = false;

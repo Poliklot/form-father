@@ -113,18 +113,6 @@ export function isPhoneValid(value: string): boolean {
 }
 
 /**
- * Проверяет является ли строка валидным номером телефона.
- *
- * @param {HTMLInputElement} $inputTel.
- *
- * @returns {boolean} Является ли строка валидным номером телефона true/false.
- */
-export function isPhoneValidOnlyThisProject($inputTel: HTMLInputElement): boolean {
-	const isValid = ($inputTel as any).intl.isValidNumber();
-	return isValid;
-}
-
-/**
  * Кастомная сериализация формы в объект FormData.
  *
  * @param {HTMLElement} $element - DOM элемент для сериализации.
