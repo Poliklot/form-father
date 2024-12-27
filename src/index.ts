@@ -303,12 +303,17 @@ export default class Form {
 			});
 
 			if ($firstInputOnForm) {
+				const rect = ($firstInputOnForm as HTMLElement).getBoundingClientRect();
+				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+				const scrollTargetY = rect.top + scrollTop - (window.innerHeight / 2);
+
 				document.documentElement.setAttribute('data-now-scrolling', '');
-				($firstInputOnForm as HTMLElement).scrollIntoView({
+
+				window.scrollTo({
+					top: scrollTargetY,
 					behavior: 'smooth',
-					block: 'center',
-					inline: 'center',
 				});
+
 				setTimeout(() => {
 					document.documentElement.removeAttribute('data-now-scrolling');
 				}, 800);
