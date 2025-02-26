@@ -177,6 +177,12 @@ export default class Form {
 					headers['Content-Type'] = 'text/plain';
 					break;
 
+				case 'application/json':
+					const jsonData = Object.fromEntries(new FormData(this.$el));
+					body = JSON.stringify(jsonData);
+					headers['Content-Type'] = 'application/json';
+					break;
+
 				default:
 					console.warn(`Неизвестный enctype: ${enctype}. Используется application/x-www-form-urlencoded.`);
 					body = new URLSearchParams(new FormData(this.$el) as any).toString();
