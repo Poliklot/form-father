@@ -1,12 +1,21 @@
 {
 	"name": "form-father",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"description": "Form Father: Библиотека для обработки форм",
-	"main": "index.js",
-	"types": "index.d.ts",
+	"type": "module",
+	"scripts": {
+		"build": "rollup -c",
+		"watch": "rollup -c -w",
+		"release": "node scripts/release.js",
+		"demos": "BUILD_TARGET=demos npm run build && concurrently --kill-others \"vite\" \"npm run watch\""
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/poliklot/form-father.git"
+	},
 	"keywords": [
 		"form",
-		"vanilla",
+		"vanila",
 		"javascript",
 		"typescript",
 		"validation",
@@ -14,11 +23,31 @@
 	],
 	"author": "Poliklot",
 	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/poliklot/form-father.git"
-	},
 	"bugs": {
 		"url": "https://github.com/poliklot/form-father/issues"
+	},
+	"sideEffects": false,
+	"devDependencies": {
+		"@babel/preset-env": "^7.26.0",
+		"@rollup/plugin-babel": "^6.0.4",
+		"@rollup/plugin-commonjs": "^28.0.1",
+		"@rollup/plugin-json": "^6.1.0",
+		"@rollup/plugin-node-resolve": "^15.3.0",
+		"@rollup/plugin-terser": "^0.4.4",
+		"chalk": "^5.3.0",
+		"concurrently": "^9.0.1",
+		"fs-extra": "^11.2.0",
+		"inquirer": "^12.1.0",
+		"ora": "^8.1.1",
+		"postcss-preset-env": "^10.0.8",
+		"prettier-plugin-jsdoc": "^1.3.0",
+		"rollup": "^4.24.3",
+		"rollup-plugin-copy": "^3.5.0",
+		"rollup-plugin-delete": "^2.1.0",
+		"rollup-plugin-dts": "^6.1.1",
+		"rollup-plugin-typescript2": "^0.36.0",
+		"sass-embedded": "^1.80.5",
+		"typescript": "^5.6.3",
+		"vite": "^5.4.10"
 	}
 }
