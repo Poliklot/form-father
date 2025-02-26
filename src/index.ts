@@ -57,6 +57,9 @@ interface FormOptions {
 
 	/** Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров телефонов. */
 	validatePhone?: (input: HTMLInputElement) => boolean;
+
+    /** Функция для обёртки отправляемых данных. */
+    wrapData?: (data: Record<string, any>) => Record<string, any>;
 }
 
 interface ErrorResponse {
@@ -156,27 +159,39 @@ export default class Form {
 			let body: BodyInit | null = null;
 			let headers: HeadersInit = {};
 
+			// Сбор данных из формы
+			const formData = new FormData(this.$el);
+			let data: Record<string, any> = {};
+			formData.forEach((value, key) => {
+				data[key] = value;
+			});
+
+			// Применение обёртки, если указано в настройках
+			if (typeof this.config.wrapData === 'function') {
+				data = this.config.wrapData(data);
+			}
+
 			switch (enctype) {
 				case 'application/x-www-form-urlencoded':
-					body = new URLSearchParams(new FormData(this.$el) as any).toString();
+					body = new URLSearchParams(data as any).toString();
 					headers['Content-Type'] = 'application/x-www-form-urlencoded';
 					break;
 
 				case 'multipart/form-data':
-					body = serializeToFormData(this.$el); // Уже реализовано в вашем коде
+					body = new FormData(this.$el);
 					break;
 
 				case 'text/plain':
-					body = Array.from(new FormData(this.$el))
+					body = Object.entries(data)
 						.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
 						.join('\n');
 					headers['Content-Type'] = 'text/plain';
 					break;
 
+				case 'application/json':
 				default:
-					console.warn(`Неизвестный enctype: ${enctype}. Используется application/x-www-form-urlencoded.`);
-					body = new URLSearchParams(new FormData(this.$el) as any).toString();
-					headers['Content-Type'] = 'application/x-www-form-urlencoded';
+					body = JSON.stringify(data);
+					headers['Content-Type'] = 'application/json';
 			}
 
 			return fetch(action, {
