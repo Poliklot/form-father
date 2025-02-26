@@ -159,39 +159,28 @@ export default class Form {
 			let body: BodyInit | null = null;
 			let headers: HeadersInit = {};
 
-			// Сбор данных из формы
-			const formData = new FormData(this.$el);
-			let data: Record<string, any> = {};
-			formData.forEach((value, key) => {
-				data[key] = value;
-			});
-
-			// Применение обёртки, если указано в настройках
-			if (typeof this.config.wrapData === 'function') {
-				data = this.config.wrapData(data);
-			}
-
 			switch (enctype) {
 				case 'application/x-www-form-urlencoded':
-					body = new URLSearchParams(data as any).toString();
+					body = new URLSearchParams(new FormData(this.$el) as any).toString();
 					headers['Content-Type'] = 'application/x-www-form-urlencoded';
 					break;
 
 				case 'multipart/form-data':
-					body = new FormData(this.$el);
+					body = serializeToFormData(this.$el);
+					// ВАЖНО: Не указываем Content-Type, т.к. браузер сам добавит с корректной границей!
 					break;
 
 				case 'text/plain':
-					body = Object.entries(data)
+					body = Array.from(new FormData(this.$el))
 						.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
 						.join('\n');
 					headers['Content-Type'] = 'text/plain';
 					break;
 
-				case 'application/json':
 				default:
-					body = JSON.stringify(data);
-					headers['Content-Type'] = 'application/json';
+					console.warn(`Неизвестный enctype: ${enctype}. Используется application/x-www-form-urlencoded.`);
+					body = new URLSearchParams(new FormData(this.$el) as any).toString();
+					headers['Content-Type'] = 'application/x-www-form-urlencoded';
 			}
 
 			return fetch(action, {
