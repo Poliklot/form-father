@@ -34,7 +34,7 @@ import ora from 'ora';
 		// Обновляем версию в package/package.json
 		if (newVersion) {
 			pkg.version = newVersion;
-			fs.writeFileSync(rootPackagePath, JSON.stringify(pkg, null, '\t'));
+			fs.writeFileSync(packagePackagePath, JSON.stringify(pkg, null, '\t'));
 			console.log(chalk.green(`\nВерсия обновлена до ${pkg.version}\n`));
 		}
 
