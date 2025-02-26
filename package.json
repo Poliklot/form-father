@@ -1,12 +1,12 @@
 {
 	"name": "form-father",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"description": "Form Father: Библиотека для обработки форм",
 	"type": "module",
 	"scripts": {
 		"build": "rollup -c",
 		"watch": "rollup -c -w",
-		"release": "node scripts/release.js",
+		"release": "node scripts/release.js & node scripts/sync-version.js",
 		"demos": "BUILD_TARGET=demos npm run build && concurrently --kill-others \"vite\" \"npm run watch\""
 	},
 	"repository": {
