@@ -159,6 +159,18 @@ export default class Form {
 			let body: BodyInit | null = null;
 			let headers: HeadersInit = {};
 
+			// Сбор данных из формы
+			const formData = new FormData(this.$el);
+			let data: Record<string, any> = {};
+			formData.forEach((value, key) => {
+				data[key] = value;
+			});
+
+			// Применение обёртки, если указано в настройках
+			if (typeof this.config.wrapData === 'function') {
+				data = this.config.wrapData(data);
+			}
+
 			switch (enctype) {
 				case 'application/x-www-form-urlencoded':
 					body = new URLSearchParams(new FormData(this.$el) as any).toString();
@@ -178,8 +190,7 @@ export default class Form {
 					break;
 
 				case 'application/json':
-					const jsonData = Object.fromEntries(new FormData(this.$el));
-					body = JSON.stringify(jsonData);
+					body = JSON.stringify(data);
 					headers['Content-Type'] = 'application/json';
 					break;
 
