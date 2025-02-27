@@ -56,10 +56,10 @@ interface FormOptions {
 	logging?: boolean;
 
 	/** Селектор поля ввода данных. Таких как textarea, input, select, ... . По умолчанию `.input`. */
-	inputSelector: '.input',
+	inputSelector: string,
 
 	/** Селектор поля обёртки над полем ввода, у которого реализован публичный метод `showError`. По умолчанию `.input-primary`. */
-	inputWrapperSelector: '.input-primary',
+	inputWrapperSelector: string,
 
 	/** Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров телефонов. */
 	validatePhone?: (input: HTMLInputElement) => boolean;
@@ -117,6 +117,7 @@ export default class Form {
 			scrollToFirstErroredInput: true,
 			logging: false,
 			inputSelector: '.input',
+			inputWrapperSelector: '.input-primary',
 		};
 
         /* Слияние параметров: глобальные параметры → пользовательские параметры */
