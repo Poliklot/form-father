@@ -55,6 +55,12 @@ interface FormOptions {
 	/** Нужно ли выводить данные в консоль. По умолчанию `false`. */
 	logging?: boolean;
 
+	/** Селектор поля ввода данных. Таких как textarea, input, select, ... . По умолчанию `.input`. */
+	inputSelector: '.input',
+
+	/** Селектор поля обёртки над полем ввода, у которого реализован публичный метод `showError`. По умолчанию `.input-primary`. */
+	inputWrapperSelector: '.input-primary',
+
 	/** Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров телефонов. */
 	validatePhone?: (input: HTMLInputElement) => boolean;
 
@@ -110,6 +116,7 @@ export default class Form {
 			showLoaderButton: true,
 			scrollToFirstErroredInput: true,
 			logging: false,
+			inputSelector: '.input',
 		};
 
         /* Слияние параметров: глобальные параметры → пользовательские параметры */
@@ -139,7 +146,7 @@ export default class Form {
 	}
 
 	private initialization() {
-		this.inputs = this.$el.querySelectorAll('.input') as NodeListOf<HTMLInputElement | HTMLTextAreaElement>;
+		this.inputs = this.$el.querySelectorAll(this.config.inputSelector) as NodeListOf<HTMLInputElement | HTMLTextAreaElement>;
 		this.$licensesCheckbox = this.$el.querySelector('input[data-input-name="user-consent"]') as HTMLInputElement;
 
 		if (this.$licensesCheckbox) {
@@ -265,7 +272,7 @@ export default class Form {
 	 * @param {String} text - Текст ошибки.
 	 */
 	private showError($input: HTMLInputElement, text: string) {
-		(closest($input, 'input-primary') as any).showError(text);
+		(closest($input, this.config.inputWrapperSelector) as any).showError(text);
 	}
 
 	/** Показывает лоадер */
