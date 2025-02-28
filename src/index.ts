@@ -392,7 +392,14 @@ export default class Form {
 			const $input = $inputEl as HTMLInputElement;
 			const inputType = $input.getAttribute('data-check-type') || $input.getAttribute('type') || '';
 
-			if (
+			if ($input.tagName === 'SELECT') {
+				const selectedOption = $input.querySelector('option:selected') as HTMLOptionElement;
+				if (selectedOption && selectedOption.value === '' && $input.hasAttribute('required')) {
+					this.showError($input, 'Пустое значение');
+					inputsList.push($input);
+					isCorrect = false;
+				}
+			} else if (
 				this.config.customTypeError?.name !== inputType ||
 				($input.tagName === 'TEXTAREA' && !this.config.customTypeError)
 			) {
