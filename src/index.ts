@@ -393,7 +393,7 @@ export default class Form {
 			const inputType = $input.getAttribute('data-check-type') || $input.getAttribute('type') || '';
 
 			if ($input.tagName === 'SELECT') {
-				const selectedOption = $input.querySelector('option[selected]') as HTMLOptionElement;
+				const selectedOption = ($input as unknown as HTMLSelectElement).selectedOptions[0];
 				if (selectedOption && selectedOption.value === '' && $input.hasAttribute('required')) {
 					this.showError($input, 'Пустое значение');
 					inputsList.push($input);
