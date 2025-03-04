@@ -168,7 +168,7 @@ export default class Form {
 			let headers: HeadersInit = {};
 
 			// Сбор данных из формы
-			const formData = new FormData(this.$el);
+			const formData = serializeToFormData(this.$el);
 			let data: Record<string, any> = {};
 			formData.forEach((value, key) => {
 				data[key] = value;
@@ -186,7 +186,7 @@ export default class Form {
 
 			switch (enctype) {
 				case 'application/x-www-form-urlencoded':
-					body = new URLSearchParams(new FormData(this.$el) as any).toString();
+					body = new URLSearchParams(serializeToFormData(this.$el) as any).toString();
 					headers['Content-Type'] = 'application/x-www-form-urlencoded';
 					break;
 
@@ -196,7 +196,7 @@ export default class Form {
 					break;
 
 				case 'text/plain':
-					body = Array.from(new FormData(this.$el))
+					body = Array.from(serializeToFormData(this.$el))
 						.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
 						.join('\n');
 					headers['Content-Type'] = 'text/plain';
@@ -209,7 +209,7 @@ export default class Form {
 
 				default:
 					console.warn(`Неизвестный enctype: ${enctype}. Используется application/x-www-form-urlencoded.`);
-					body = new URLSearchParams(new FormData(this.$el) as any).toString();
+					body = new URLSearchParams(serializeToFormData(this.$el) as any).toString();
 					headers['Content-Type'] = 'application/x-www-form-urlencoded';
 			}
 

@@ -159,7 +159,19 @@ export function serializeToFormData($element: HTMLElement): FormData {
 			}
 		} else {
 			let value: string;
-			if (type === 'tel') {
+			if (type === 'select-one' || type === 'select-multiple') {
+				// Обработка select элементов
+				const select = element as HTMLSelectElement;
+				if (type === 'select-multiple') {
+					const selectedOptions = Array.from(select.selectedOptions).map(option => option.value);
+					selectedOptions.forEach((val, index) => {
+						data.append(`${name}[${index}]`, val);
+					});
+				} else {
+					value = select.value;
+					if (value) data.append(name, value);
+				}
+			} else if (type === 'tel') {
 				value = element.value
 					.split(/[\s()-]/)
 					.join('')
@@ -174,7 +186,9 @@ export function serializeToFormData($element: HTMLElement): FormData {
 				value = element.value;
 			}
 
-			data.append(name, value);
+			if (value! && type !== 'select-one' && type !== 'select-multiple') {
+				data.append(name, value);
+			}
 		}
 	});
 
