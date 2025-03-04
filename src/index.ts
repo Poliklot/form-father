@@ -174,6 +174,11 @@ export default class Form {
 				data[key] = value;
 			});
 
+			if (this.config.logging) {
+				for (const key of formData.keys())
+					console.log(formData.get(key));
+			}
+
 			// Применение обёртки, если указано в настройках
 			if (typeof this.config.wrapData === 'function') {
 				data = this.config.wrapData(data);
