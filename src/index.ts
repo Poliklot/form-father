@@ -56,16 +56,22 @@ interface FormOptions {
 	logging?: boolean;
 
 	/** Селектор поля ввода данных. Таких как textarea, input, select, ... . По умолчанию `.input`. */
-	inputSelector?: string,
+	inputSelector?: string;
 
-	/** Селектор поля обёртки над полем ввода, у которого реализован публичный метод `showError`. По умолчанию `.input-primary`. */
-	inputWrapperSelector?: string,
+	/**
+	 * Селектор поля обёртки над полем ввода, у которого реализован публичный метод `showError`. По умолчанию
+	 * `.input-primary`.
+	 */
+	inputWrapperSelector?: string;
 
-	/** Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров телефонов. */
+	/**
+	 * Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров
+	 * телефонов.
+	 */
 	validatePhone?: (input: HTMLInputElement) => boolean;
 
-    /** Функция для обёртки отправляемых данных. */
-    wrapData?: (data: Record<string, any>) => Record<string, any>;
+	/** Функция для обёртки отправляемых данных. */
+	wrapData?: (data: Record<string, any>) => Record<string, any>;
 }
 
 interface ErrorResponse {
@@ -94,7 +100,7 @@ export default class Form {
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
 	private $licensesCheckbox: HTMLInputElement | null = null;
 
-    private static defaultParams: Partial<FormOptions> = {};
+	private static defaultParams: Partial<FormOptions> = {};
 
 	/**
 	 * Создать форму.
@@ -120,8 +126,8 @@ export default class Form {
 			inputWrapperSelector: '.input-primary',
 		};
 
-        /* Слияние параметров: глобальные параметры → пользовательские параметры */
-        this.config = Object.assign({}, defaultConfig, Form.defaultParams, options);
+		/* Слияние параметров: глобальные параметры → пользовательские параметры */
+		this.config = Object.assign({}, defaultConfig, Form.defaultParams, options);
 
 		if (this.$el) {
 			this.$submit = this.$el.querySelector('input[type="submit"], button[type="submit"]');
@@ -136,18 +142,20 @@ export default class Form {
 	}
 
 	/**
-	 * Обновляет параметры по умолчанию для настроек формы.
-	 * Метод объединяет переданные параметры с уже существующими параметрами по умолчанию.
+	 * Обновляет параметры по умолчанию для настроек формы. Метод объединяет переданные параметры с уже существующими
+	 * параметрами по умолчанию.
 	 *
-	 * @param {Partial<FormOptions>} params - Объект, содержащий новые значения параметров.
-	 * Можно передать только те свойства, которые необходимо обновить; остальные сохранятся без изменений.
+	 * @param {Partial<FormOptions>} params - Объект, содержащий новые значения параметров. Можно передать только те
+	 *   свойства, которые необходимо обновить; остальные сохранятся без изменений.
 	 */
 	public static setDefaultParams(params: Partial<FormOptions>) {
 		this.defaultParams = { ...this.defaultParams, ...params };
 	}
 
 	private initialization() {
-		this.inputs = this.$el.querySelectorAll(this.config.inputSelector!) as NodeListOf<HTMLInputElement | HTMLTextAreaElement>;
+		this.inputs = this.$el.querySelectorAll(this.config.inputSelector!) as NodeListOf<
+			HTMLInputElement | HTMLTextAreaElement
+		>;
 		this.$licensesCheckbox = this.$el.querySelector('input[data-input-name="user-consent"]') as HTMLInputElement;
 
 		if (this.$licensesCheckbox) {
@@ -175,8 +183,7 @@ export default class Form {
 			});
 
 			if (this.config.logging) {
-				for (const key of formData.keys())
-					console.log(formData.get(key));
+				for (const key of formData.keys()) console.log(formData.get(key));
 			}
 
 			// Применение обёртки, если указано в настройках
@@ -262,7 +269,6 @@ export default class Form {
 				}
 			}
 		};
-
 
 		this.$el.addEventListener('submit', e => {
 			e.preventDefault();
@@ -366,7 +372,7 @@ export default class Form {
 			if ($firstInputOnForm) {
 				const rect = ($firstInputOnForm as HTMLElement).getBoundingClientRect();
 				const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-				const scrollTargetY = rect.top + scrollTop - (window.innerHeight / 2);
+				const scrollTargetY = rect.top + scrollTop - window.innerHeight / 2;
 
 				document.documentElement.setAttribute('data-now-scrolling', '');
 
@@ -404,6 +410,12 @@ export default class Form {
 					inputsList.push($input);
 					isCorrect = false;
 				}
+			} else if (inputType === 'checkbox') {
+				if ($input.hasAttribute('required') && !$input.checked) {
+					this.showError($input, 'Необходимо согласие');
+					inputsList.push($input);
+					isCorrect = false;
+				}
 			} else if (
 				this.config.customTypeError?.name !== inputType ||
 				($input.tagName === 'TEXTAREA' && !this.config.customTypeError)
@@ -417,7 +429,11 @@ export default class Form {
 						}
 					}
 					if (inputType === 'tel') {
-						const isPhoneValidChecker = this.config.validatePhone || (($input: HTMLInputElement) => {return isPhoneValid($input.value)});
+						const isPhoneValidChecker =
+							this.config.validatePhone ||
+							(($input: HTMLInputElement) => {
+								return isPhoneValid($input.value);
+							});
 						if (!isPhoneValidChecker($input)) {
 							this.showError($input, 'Неверный формат');
 							inputsList.push($input);
