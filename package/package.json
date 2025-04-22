@@ -1,6 +1,6 @@
 {
 	"name": "form-father",
-	"version": "0.0.20",
+	"version": "0.0.21",
 	"description": "Form Father: Библиотека для обработки форм",
 	"type": "module",
 	"scripts": {
