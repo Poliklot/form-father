@@ -293,7 +293,7 @@ export default class Form {
 		const loaderSvg = `
 			<svg height="38" viewBox="0 0 38 38" width="38" xmlns="http://www.w3.org/2000/svg">
 				<defs>
-				<linearGradient id="a" x1="8.042%" x2="65.682%" y1="0%" y2="23.865%">
+				<linearGradient id="form-father-loader" x1="8.042%" x2="65.682%" y1="0%" y2="23.865%">
 					<stop offset="0%" stop-color="${this.config.loaderColor}" stop-opacity="0"/>
 					<stop offset="63.146%" stop-color="${this.config.loaderColor}" stop-opacity=".631"/>
 					<stop offset="100%" stop-color="${this.config.loaderColor}"/>
@@ -301,7 +301,7 @@ export default class Form {
 				</defs>
 				<g fill-rule="evenodd" fill="none">
 				<g transform="translate(1 1)">
-					<path d="M36 18c0-9.94-8.06-18-18-18" id="Oval-2" stroke-width="5" stroke="url(#a)"></path>
+					<path d="M36 18c0-9.94-8.06-18-18-18" id="Oval-2" stroke-width="5" stroke="url(#form-father-loader)"></path>
 					<circle cx="36" cy="18" fill="${this.config.loaderColor}" r="1"></circle>
 				</g>
 				</g>
