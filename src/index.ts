@@ -515,7 +515,7 @@ export default class Form {
 	public clearInputs() {
 		this.inputs?.forEach($inputEl => {
 			const $input = $inputEl as HTMLInputElement;
-			if ($input.type === 'radio') {
+			if ($input.type === 'radio' || $input.type === 'checkbox') {
 				$input.checked = false;
 			} else {
 				$input.value = '';
