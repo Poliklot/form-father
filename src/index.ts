@@ -6,6 +6,16 @@ import {
 	closest,
 	isPhoneValid,
 } from './helpers';
+import { getValidator } from './validators';
+
+type ValidationSchema = Record<
+	string,
+	{
+		rules: (string | { rule: string; params?: any })[];
+		selector: string;
+		messages?: Record<string, string>;
+	}
+>;
 
 /** Параметры формы. */
 interface FormOptions {
@@ -72,6 +82,9 @@ interface FormOptions {
 
 	/** Функция для обёртки отправляемых данных. */
 	wrapData?: (data: Record<string, any>) => Record<string, any>;
+
+	/** Схема валидации: поле → массив правил + override-сообщения */
+	validationSchema?: ValidationSchema;
 }
 
 interface ErrorResponse {
@@ -101,6 +114,28 @@ export default class Form {
 	private $licensesCheckbox: HTMLInputElement | null = null;
 
 	private static defaultParams: Partial<FormOptions> = {};
+	static defaultValidationSchema: ValidationSchema = {
+		tel: {
+			selector: 'input[type="tel"]',
+			rules: ['tel'],
+		},
+		email: {
+			selector: 'input[type="email"]',
+			rules: ['email'],
+		},
+		required: {
+			selector: '[required]',
+			rules: ['required'],
+		},
+		url: {
+			selector: 'input[type="url"]',
+			rules: ['url'],
+		},
+		'not-numbers': {
+			selector: 'input[data-validate="not-numbers"]',
+			rules: ['not-numbers'],
+		},
+	};
 
 	/**
 	 * Создать форму.
@@ -270,10 +305,10 @@ export default class Form {
 			}
 		};
 
-		this.$el.addEventListener('submit', e => {
+		this.$el.addEventListener('submit', async e => {
 			e.preventDefault();
-			if (this.checkInputs() && (!this.$licensesCheckbox || (this.$licensesCheckbox && this.$licensesCheckbox.checked)))
-				submit();
+			const isValid = await this.validate();
+			if (isValid && (!this.$licensesCheckbox || (this.$licensesCheckbox && this.$licensesCheckbox.checked))) submit();
 		});
 	}
 
@@ -389,116 +424,120 @@ export default class Form {
 	}
 
 	/**
-	 * Проверяет все поля ввода на корректность их заполнения.
+	 * Проверяет все поля ввода.
 	 *
-	 * Проверяются все поля ввода и если поле некорректно заполнено показывают ошибки рядом с полем ввода.
+	 * Порядок для КАЖДОГО `<input>`:
 	 *
-	 * @returns {boolean} Корректно заполнены или нет (true/false).
+	 * 1. `required` — если атрибут `required`
+	 * 2. правила из `validationSchema`
+	 * 3. правила из `data-custom-validate`
+	 *
+	 * Для одного поля показывается только первая ошибка. Неизвестные правила фиксируются `console.warn` и исключаются ДО
+	 * валидации, поэтому валидационный цикл больше не проверяет их наличие.
 	 */
-	private checkInputs(): boolean {
-		let isCorrect = true;
-		const radioGroups: { [key: string]: { [key: number]: HTMLInputElement } } = {};
-		const inputsList: HTMLInputElement[] = [];
-		this.inputs?.forEach($inputEl => {
-			const $input = $inputEl as HTMLInputElement;
-			const inputType = $input.getAttribute('data-check-type') || $input.getAttribute('type') || '';
+	async validate(): Promise<boolean> {
+		/* ---------- финальная схема (defaults + config) ---------- */
+		const schema: ValidationSchema = {
+			...(Form.defaultValidationSchema || {}),
+			...(this.config.validationSchema || {}),
+		};
 
-			if ($input.tagName === 'SELECT') {
-				const selectedOption = ($input as unknown as HTMLSelectElement).selectedOptions[0];
-				if (selectedOption && selectedOption.value === '' && $input.hasAttribute('required')) {
-					this.showError($input, 'Пустое значение');
-					inputsList.push($input);
-					isCorrect = false;
-				}
-			} else if (inputType === 'checkbox') {
-				if ($input.hasAttribute('required') && !$input.checked) {
-					this.showError($input, 'Необходимо согласие');
-					inputsList.push($input);
-					isCorrect = false;
-				}
-			} else if (
-				this.config.customTypeError?.name !== inputType ||
-				($input.tagName === 'TEXTAREA' && !this.config.customTypeError)
-			) {
-				if ($input.value.length > 0) {
-					if (inputType === 'email') {
-						if (!isEmailValid($input.value)) {
-							this.showError($input, 'Неверный формат');
-							inputsList.push($input);
-							isCorrect = false;
-						}
-					}
-					if (inputType === 'tel') {
-						const isPhoneValidChecker =
-							this.config.validatePhone ||
-							(($input: HTMLInputElement) => {
-								return isPhoneValid($input.value);
-							});
-						if (!isPhoneValidChecker($input)) {
-							this.showError($input, 'Неверный формат');
-							inputsList.push($input);
-							isCorrect = false;
-						}
-					}
-					if (inputType === 'url') {
-						if (!isUrlValid($input.value)) {
-							this.showError($input, 'Неверный формат');
-							inputsList.push($input);
-							isCorrect = false;
-						}
-					}
-					if (inputType === 'text') {
-						if ($input.getAttribute('data-check-type') === 'not-numbers') {
-							if (/[0-9]/.test($input.value)) {
-								this.showError($input, 'Неверный формат');
-								inputsList.push($input);
-								isCorrect = false;
-							}
-						}
-					}
-					if (inputType === 'radio') {
-						const name = $input.getAttribute('name') || '';
-						if (!radioGroups[name]) {
-							radioGroups[name] = {};
-						}
-						radioGroups[name][Object.keys(radioGroups[name]).length] = $input;
-					}
-				} else if ($input.hasAttribute('required')) {
-					this.showError($input, 'Пустое значение');
-					inputsList.push($input);
-					isCorrect = false;
+		const warnUnknown = (r: string) => console.warn(`[FormFather] Unknown validation rule "${r}"`);
+
+		const erroredInputs: HTMLInputElement[] = [];
+		const processed = new WeakSet<HTMLInputElement>();
+		let ok = true;
+
+		/* ---------- helpers ---------- */
+
+		/** Собирает и тут же фильтрует unknown-rules */
+		const collectRules = (
+			$input: HTMLInputElement,
+			fromSchema: (string | { rule: string; params?: any })[] = [],
+		): (string | { rule: string; params?: any })[] => {
+			const list: (string | { rule: string; params?: any })[] = [];
+
+			if ($input.hasAttribute('required')) list.push('required'); // 1
+			list.push(...fromSchema); // 2
+
+			const custom = ($input.getAttribute('data-custom-validate') ?? '')
+				.split(',')
+				.map(s => s.trim())
+				.filter(Boolean);
+			list.push(...custom); // 3
+
+			/* —–– предварительная фильтрация unknown ––– */
+			const filtered: typeof list = [];
+			for (const r of list) {
+				const ruleName = typeof r === 'string' ? r : r.rule;
+				if (getValidator(ruleName)) filtered.push(r);
+				else warnUnknown(ruleName);
+			}
+			return filtered;
+		};
+
+		const validateInput = async (
+			$input: HTMLInputElement,
+			rules: (string | { rule: string; params?: any })[],
+			msgs: Record<string, string> = {},
+		) => {
+			const empty =
+				$input.type === 'checkbox' || $input.type === 'radio' ? !$input.checked : $input.value.trim().length === 0;
+
+			if (empty && !rules.includes('required')) {
+				this.hideError($input);
+				return;
+			}
+
+			for (const r of rules) {
+				const { rule, params } = typeof r === 'string' ? { rule: r, params: undefined } : r;
+				const vd = getValidator(rule)!; // гарантированно существует
+
+				const passed = await vd.fn($input.value, $input, this.$el, params);
+				if (!passed) {
+					ok = false;
+					const msg = msgs[rule] ?? vd.defaultMessage;
+					this.showError($input, msg);
+					erroredInputs.push($input);
+					return; // первую ошибку отобразили
 				}
 			}
-		});
 
-		if (Object.keys(radioGroups).length > 0) {
-			for (const key in radioGroups) {
-				const group = radioGroups[key];
-				let isRequired = false;
-				let $checkedInput: HTMLInputElement | null = null;
+			this.hideError($input);
+		};
 
-				for (const keyGroup in group) {
-					const $radio = group[keyGroup];
-					if ($radio.hasAttribute('required')) isRequired = true;
-					if ($radio.checked) {
-						if ($checkedInput === null) {
-							$checkedInput = $radio;
-						} else {
-							return false;
-						}
-					}
-				}
+		/* ---------- 1. inputs из schema (config + defaults) ---------- */
+		for (const [key, def] of Object.entries(schema)) {
+			const { selector, rules = [], messages = {} } = def as any;
 
-				if ($checkedInput === null && isRequired) {
-					this.showErrorForm('Необходимо указать оценку');
-					return false;
-				}
+			const nodeList = selector
+				? this.$el.querySelectorAll(selector) // явный CSS-селектор
+				: this.$el.querySelectorAll(`[data-validate="${key}"]`); // fallback по name
+
+			for (const $input of Array.from(nodeList) as HTMLInputElement[]) {
+				if (processed.has($input)) continue;
+				processed.add($input);
+
+				await validateInput($input, collectRules($input, rules), messages);
 			}
 		}
 
-		if (this.config.scrollToFirstErroredInput === true) this.scrollToFirstErroredInput(inputsList);
+		/* ---------- 2. inputs только с data-custom ---------- */
+		const rest = Array.from(this.$el.querySelectorAll<HTMLInputElement>('[data-custom-validate]')).filter(
+			$i => !processed.has($i),
+		);
 
-		return isCorrect;
+		for (const $input of rest) {
+			processed.add($input);
+			await validateInput($input, collectRules($input, []));
+		}
+
+		/* ---------- scroll ---------- */
+		if (!ok && this.config.scrollToFirstErroredInput) {
+			this.scrollToFirstErroredInput(erroredInputs);
+		}
+
+		return ok;
 	}
 
 	/** Блокирует кнопку отправки данных. */
