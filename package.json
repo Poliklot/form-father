@@ -3,6 +3,12 @@
 	"version": "0.1.1",
 	"description": "Form Father: Библиотека для обработки форм",
 	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
 	"scripts": {
 		"build": "rollup -c",
 		"watch": "rollup -c -w",
