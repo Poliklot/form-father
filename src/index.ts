@@ -8,6 +8,8 @@ import {
 } from './helpers';
 import { getValidator } from './validators';
 
+export * from './validators';
+
 type ValidationSchema = Record<
 	string,
 	{
