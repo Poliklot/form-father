@@ -1,7 +1,7 @@
 /* ---------- types ---------- */
 type ValidatorFn = (
 	value: string,
-	$input: HTMLInputElement,
+	$input: HTMLInputElement | HTMLTextAreaElement,
 	$form: HTMLElement,
 	params?: any,
 ) => boolean | Promise<boolean>;
@@ -37,7 +37,24 @@ export function getAllValidators(): Map<string, Validator> {
 }
 
 /* ---------- built-in rules ---------- */
-registerValidator('required', v => v.trim().length > 0, 'Пустое значение');
+registerValidator(
+	'required',
+	(value, $input, $form) => {
+		if ($input && $input.type) {
+			if ($input.type === 'checkbox') {
+				return ($input as HTMLInputElement).checked;
+			}
+			if ($input.type === 'radio') {
+				const group = $form.querySelectorAll(`input[type="radio"][name="${$input.name}"]`);
+				return Array.from(group).some(el => (el as HTMLInputElement).checked);
+			}
+		}
+
+		// fallback — если нет $input (например, в unit-тестах)
+		return value.trim().length > 0;
+	},
+	'Пустое значение',
+);
 
 registerValidator('email', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Неверный формат');
 

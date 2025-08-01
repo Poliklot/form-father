@@ -325,6 +325,125 @@ describe('Form.validate()', () => {
 
 		expect(mockLog).toHaveBeenCalledWith('["required","email","tel","url","not-numbers","begin+79277"]');
 	});
+
+	test('Required checkbox не выборан', async () => {
+		const formEl = buildForm(`
+            <form id="f">
+                <div class="checkbox__wrapper">
+                    <input id="formAuthorize-checkboxUserAgreement" class="checkbox input" type="checkbox" name="checkboxUserAgreement" value="off" required>
+                </div>
+                <button type="submit"></button>
+            </form>
+        `);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.input__wrapper, .checkbox__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+
+		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
+		await (form as any).validate();
+
+		expect(spy).toHaveBeenCalledTimes(1);
+		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Пустое значение');
+	});
+
+	test('Required checkbox выборан', async () => {
+		const formEl = buildForm(`
+            <form id="f">
+                <div class="checkbox__wrapper">
+                    <input id="formAuthorize-checkboxUserAgreement" class="checkbox input" type="checkbox" name="checkboxUserAgreement" value="off" checked required>
+                </div>
+                <button type="submit"></button>
+            </form>
+        `);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.input__wrapper, .checkbox__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+
+		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
+		const result = await (form as any).validate();
+		expect(result).toBe(true);
+		expect(spy).not.toHaveBeenCalled();
+	});
+
+	/* TODO: Должна быть 1 ошибка на группу - доработать. */
+	test('Required radio не выбран — вызывает ошибку', async () => {
+		const formEl = buildForm(`
+			<form id="f">
+				<div class="radio__wrapper">
+					<input type="radio" name="gender" value="male" class="radio input" required />
+					<input type="radio" name="gender" value="female" class="radio input" required />
+				</div>
+				<button type="submit"></button>
+			</form>
+		`);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.input__wrapper, .radio__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+
+		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
+		const result = await (form as any).validate();
+
+		expect(result).toBe(false);
+		expect(spy).toHaveBeenCalledTimes(2);
+		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Пустое значение');
+	});
+
+	test('Required radio выбран — проходит валидацию', async () => {
+		const formEl = buildForm(`
+			<form id="f">
+				<div class="radio__wrapper">
+					<input type="radio" name="gender" value="male" class="radio input" required />
+					<input type="radio" name="gender" value="female" class="radio input" required checked />
+				</div>
+				<button type="submit"></button>
+			</form>
+		`);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.input__wrapper, .radio__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+
+		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
+		const result = await (form as any).validate();
+
+		expect(result).toBe(true);
+		expect(spy).not.toHaveBeenCalled();
+	});
+
+	test('Required radio (одна кнопка в группе) — срабатывает корректно', async () => {
+		const formEl = buildForm(`
+			<form id="f">
+				<div class="radio__wrapper">
+					<input type="radio" name="notify" value="yes" class="radio input" required />
+				</div>
+				<button type="submit"></button>
+			</form>
+		`);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.radio__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+
+		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
+		const result = await (form as any).validate();
+
+		expect(result).toBe(false);
+		expect(spy).toHaveBeenCalledTimes(1); // только один элемент в группе
+		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Пустое значение');
+	});
 });
 
 /**
