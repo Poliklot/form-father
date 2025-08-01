@@ -193,17 +193,19 @@ export default class Form {
 		this.inputs = this.$el.querySelectorAll(this.config.inputSelector!) as NodeListOf<
 			HTMLInputElement | HTMLTextAreaElement
 		>;
-		this.$licensesCheckbox = this.$el.querySelector('input[data-input-name="user-consent"]') as HTMLInputElement;
 
-		if (this.$licensesCheckbox) {
-			if (this.$licensesCheckbox.checked) this.enableSubmit();
-			else this.disableSubmit();
+		/* TODO: Добавить параметр с возможностью отключать/включать кнопку, в зависимости от валидности поля. */
+		// this.$licensesCheckbox = this.$el.querySelector('input[data-input-name="user-consent"]') as HTMLInputElement;
 
-			this.$licensesCheckbox.addEventListener('change', () => {
-				if (this.$licensesCheckbox!.checked) this.enableSubmit();
-				else this.disableSubmit();
-			});
-		}
+		// if (this.$licensesCheckbox) {
+		// 	if (this.$licensesCheckbox.checked) this.enableSubmit();
+		// 	else this.disableSubmit();
+
+		// 	this.$licensesCheckbox.addEventListener('change', () => {
+		// 		if (this.$licensesCheckbox!.checked) this.enableSubmit();
+		// 		else this.disableSubmit();
+		// 	});
+		// }
 
 		const sendData = async (): Promise<Response> => {
 			const action = this.$el.getAttribute('action') || '';
@@ -310,7 +312,8 @@ export default class Form {
 		this.$el.addEventListener('submit', async e => {
 			e.preventDefault();
 			const isValid = await this.validate();
-			if (isValid && (!this.$licensesCheckbox || (this.$licensesCheckbox && this.$licensesCheckbox.checked))) submit();
+
+			if (isValid) submit();
 		});
 	}
 
