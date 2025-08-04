@@ -22,6 +22,21 @@ type ValidationSchema = Record<
 /** Параметры формы. */
 interface FormOptions {
 	/**
+	 * Функция обратного вызова. Запускается, перед началом валидации формы.
+	 *
+	 * @param formInstance - Инстанс формы.
+	 */
+	onBeforeValidate?: (formInstance: Form) => void;
+
+	/**
+	 * Функция обратного вызова. Запускается, когда закончилась валидация, но не началась отправка.
+	 *
+	 * @param isValid - Статус валидации.
+	 * @param formInstance - Инстанс формы.
+	 */
+	onAfterValidate?: (isValid: boolean, formInstance: Form) => void;
+
+	/**
 	 * Функция обратного вызова. Запускается, когда форма отправляется.
 	 *
 	 * @param formInstance - Инстанс формы.
@@ -75,12 +90,6 @@ interface FormOptions {
 	 * `.input-primary`.
 	 */
 	inputWrapperSelector?: string;
-
-	/**
-	 * Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров
-	 * телефонов.
-	 */
-	validatePhone?: (input: HTMLInputElement) => boolean;
 
 	/** Функция для обёртки отправляемых данных. */
 	wrapData?: (data: Record<string, any>) => Record<string, any>;
@@ -311,7 +320,11 @@ export default class Form {
 
 		this.$el.addEventListener('submit', async e => {
 			e.preventDefault();
+			this.config.onBeforeValidate?.(this);
+
 			const isValid = await this.validate();
+
+			this.config.onAfterValidate?.(isValid, this);
 
 			if (isValid) submit();
 		});
