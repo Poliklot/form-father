@@ -116,7 +116,7 @@ interface ResponseBody {
  * @class
  */
 export default class Form {
-	private $el: HTMLFormElement;
+	public $el: HTMLFormElement;
 	private options: FormOptions;
 	private config: FormOptions;
 	private $submit: HTMLInputElement | HTMLButtonElement | null = null;
