@@ -582,6 +582,28 @@ export default class Form {
 		});
 	}
 
+	/** Общие настройки анимаций (можно подправить под вкус) */
+	private readonly _anim = {
+		duration: 220,
+		easing: 'ease',
+		paddingTopOpened: 16,
+		iconDuration: 700,
+	};
+
+	private _prefersReducedMotion(): boolean {
+		return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+	}
+
+	private _canAnimate(el?: Element | null): boolean {
+		return !!(el && 'animate' in el && !this._prefersReducedMotion());
+	}
+
+	private _cancelAnimations(el: Element | null | undefined) {
+		// Отменяем все активные WAAPI-анимации у элемента
+		// @ts-ignore
+		el?.getAnimations?.().forEach((a: Animation) => a.cancel());
+	}
+
 	/**
 	 * Показывает ошибку под полями ввода - ошибку, относящуюся ко всей форме.
 	 *
@@ -590,62 +612,169 @@ export default class Form {
 	private showErrorForm(text: string) {
 		const inputWrappersList = this.$el.querySelectorAll(this.config.inputWrapperSelector!);
 		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1] as HTMLElement;
-		let $errorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement;
+		let $errorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement | null;
 
 		if (!$errorWrapper || !($lastInputWrapper.nextElementSibling === $errorWrapper)) {
 			$errorWrapper = document.createElement('div');
 			$errorWrapper.className = 'error-block-under-input__wrapper';
 			$errorWrapper.innerHTML = `
-        <div class="error-block-under-input error-block-under-input--warning">
-          <div class="error-block-under-input__icon-wrapper">
-            <span class="error-block-under-input__icon">
-              <!-- SVG content -->
-            </span>
-            <span class="error-block-under-input__icon error-block-under-input__icon--animated" style="display:none;"></span>
-          </div>
-          <p class="error-block-under-input__text">
-            <span class="error-block-under-input__main-text">${text}</span>
-            <span class="error-block-under-input__secondary-text"></span>
-          </p>
-        </div>`;
+      <div class="error-block-under-input error-block-under-input--warning" style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;">
+        <div class="error-block-under-input__icon-wrapper" style="position:relative;width:20px;height:20px;">
+          <span class="error-block-under-input__icon" style="display:block;width:20px;height:20px;"></span>
+          <span class="error-block-under-input__icon error-block-under-input__icon--animated" style="display:block;position:absolute;inset:0;"></span>
+        </div>
+        <p class="error-block-under-input__text" style="margin:0;">
+          <span class="error-block-under-input__main-text"></span>
+          <span class="error-block-under-input__secondary-text"></span>
+        </p>
+      </div>
+    `;
+			// Стартовые inline-стили для анимаций
+			Object.assign($errorWrapper.style, {
+				boxSizing: 'border-box',
+				overflow: 'hidden',
+				height: '0px',
+				paddingTop: '0px',
+				opacity: '0',
+			} as CSSStyleDeclaration);
 			$lastInputWrapper.insertAdjacentElement('afterend', $errorWrapper);
 		} else {
-			$errorWrapper.classList.add('error-block-under-input--warning');
-			$errorWrapper.querySelector('.error-block-under-input__icon')!.innerHTML = '<!-- SVG content -->';
-			$errorWrapper.querySelector('.error-block-under-input__main-text')!.textContent = text;
+			// убедимся, что нужные стартовые inline-стили есть
+			$errorWrapper.style.boxSizing = 'border-box';
+			$errorWrapper.style.overflow = 'hidden';
 		}
 
-		this.$el.addEventListener(
-			'input',
-			() => {
-				this.hideErrorForm();
-			},
-			{ passive: true, once: true },
-		);
-
-		$errorWrapper.querySelector('.error-block-under-input')?.classList.remove('error-block-under-input--success');
-		const $secondaryText = $errorWrapper.querySelector('.error-block-under-input__secondary-text');
+		// Текст
+		($errorWrapper.querySelector('.error-block-under-input__main-text') as HTMLElement).textContent = text;
+		const $secondaryText = $errorWrapper.querySelector(
+			'.error-block-under-input__secondary-text',
+		) as HTMLElement | null;
 		if ($secondaryText) $secondaryText.textContent = '';
 
-		const currentHeight = parseFloat($errorWrapper.style.height) || 0;
-		const currentPaddingTop = parseFloat(window.getComputedStyle($errorWrapper).paddingTop) || 0;
-		const errorBlockHeight = ($errorWrapper.querySelector('.error-block-under-input') as HTMLElement).scrollHeight + 16;
+		// Сброс success-класса, если он устанавливался где-то в другом коде
+		$errorWrapper.querySelector('.error-block-under-input')?.classList.remove('error-block-under-input--success');
 
-		if (currentHeight !== errorBlockHeight) {
-			$errorWrapper.style.height = `${currentHeight}px`;
-			$errorWrapper.style.opacity = '0';
-			$errorWrapper.style.paddingTop = `${currentPaddingTop}px`;
+		// Посчитать целевую высоту
+		const $block = $errorWrapper.querySelector('.error-block-under-input') as HTMLElement;
+
+		// Чтобы корректно мерить, временно выставим auto
+		const prevHeight = $errorWrapper.style.height;
+		const prevPadding = $errorWrapper.style.paddingTop;
+		$errorWrapper.style.height = 'auto';
+		$errorWrapper.style.paddingTop = `${this._anim.paddingTopOpened}px`;
+		const targetHeight = $errorWrapper.clientHeight; // фактическая высота открытого состояния
+
+		// Вернуть стартовое состояние (схлопнуто)
+		$errorWrapper.style.height = prevHeight || '0px';
+		$errorWrapper.style.paddingTop = prevPadding || '0px';
+
+		// Если уже раскрыт на нужную высоту — просто «дзынь» иконке и выходим
+		if (
+			parseFloat($errorWrapper.style.height) === targetHeight &&
+			parseFloat($errorWrapper.style.opacity || '1') === 1
+		) {
+			this._ringIcon($errorWrapper);
+		} else {
+			// Анимация раскрытия
+			this._cancelAnimations($errorWrapper);
+			if (this._canAnimate($errorWrapper)) {
+				const anim = $errorWrapper.animate(
+					[
+						{
+							height: `${parseFloat($errorWrapper.style.height) || 0}px`,
+							paddingTop: `${parseFloat($errorWrapper.style.paddingTop) || 0}px`,
+							opacity: parseFloat($errorWrapper.style.opacity || '0'),
+						},
+						{
+							height: `${targetHeight}px`,
+							paddingTop: `${this._anim.paddingTopOpened}px`,
+							opacity: 1,
+						},
+					],
+					{ duration: this._anim.duration, easing: this._anim.easing, fill: 'forwards' },
+				);
+				anim.addEventListener('finish', () => {
+					// После анимации: фиксируем авто-высоту, чтобы текст мог меняться
+					$errorWrapper.style.height = 'auto';
+					$errorWrapper.style.paddingTop = `${this._anim.paddingTopOpened}px`;
+					$errorWrapper.style.opacity = '1';
+				});
+			} else {
+				// Фолбэк без анимации
+				$errorWrapper.style.height = 'auto';
+				$errorWrapper.style.paddingTop = `${this._anim.paddingTopOpened}px`;
+				$errorWrapper.style.opacity = '1';
+			}
+			this._ringIcon($errorWrapper);
 		}
+
+		// Скрыть при первом вводе после показа
+		this.$el.addEventListener('input', () => this.hideErrorForm(), { passive: true, once: true });
 	}
 
 	/** Скрывает ошибку под полями ввода - ошибку, относящуюся ко всей форме. */
 	private hideErrorForm() {
 		const inputWrappersList = this.$el.querySelectorAll(this.config.inputWrapperSelector!);
-		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1];
-		const nextElement = $lastInputWrapper.nextElementSibling as HTMLElement;
-		if (nextElement && nextElement.classList.contains('error-block-under-input__wrapper')) {
-			// Анимация скрытия ошибки
+		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1] as HTMLElement;
+		const $errorWrapper = $lastInputWrapper.nextElementSibling as HTMLElement | null;
+		if (!$errorWrapper || !$errorWrapper.classList.contains('error-block-under-input__wrapper')) return;
+
+		// Текущая высота (если была auto) — измерим и зафиксируем
+		const wasAuto = $errorWrapper.style.height === '' || $errorWrapper.style.height === 'auto';
+		if (wasAuto) {
+			$errorWrapper.style.height = `${$errorWrapper.clientHeight}px`;
 		}
+		$errorWrapper.style.paddingTop = $errorWrapper.style.paddingTop || `${this._anim.paddingTopOpened}px`;
+		$errorWrapper.style.opacity = $errorWrapper.style.opacity || '1';
+
+		// Анимация схлопывания
+		this._cancelAnimations($errorWrapper);
+		if (this._canAnimate($errorWrapper)) {
+			const anim = $errorWrapper.animate(
+				[
+					{
+						height: `${parseFloat($errorWrapper.style.height) || $errorWrapper.clientHeight}px`,
+						paddingTop: `${parseFloat($errorWrapper.style.paddingTop) || this._anim.paddingTopOpened}px`,
+						opacity: parseFloat($errorWrapper.style.opacity || '1'),
+					},
+					{ height: '0px', paddingTop: '0px', opacity: 0 },
+				],
+				{ duration: this._anim.duration, easing: this._anim.easing, fill: 'forwards' },
+			);
+			anim.addEventListener('finish', () => {
+				// После закрытия можно удалить узел или оставить схлопнутым
+				$errorWrapper.remove();
+				// Если хотите оставлять в DOM:
+				// $errorWrapper.style.height = '0px';
+				// $errorWrapper.style.paddingTop = '0px';
+				// $errorWrapper.style.opacity = '0';
+			});
+		} else {
+			// Фолбэк без анимации
+			$errorWrapper.remove();
+		}
+	}
+
+	/** Короткая анимация иконки без CSS */
+	private _ringIcon($wrapper: HTMLElement) {
+		const $icon = $wrapper.querySelector('.error-block-under-input__icon--animated') as HTMLElement | null;
+		if (!$icon) return;
+
+		this._cancelAnimations($icon);
+		if (!this._canAnimate($icon)) return;
+
+		// Небольшое «качание» и вспышка прозрачности
+		$icon.animate(
+			[
+				{ transform: 'rotate(0deg) scale(1)', opacity: 0 },
+				{ transform: 'rotate(-8deg) scale(1.05)', opacity: 1, offset: 0.15 },
+				{ transform: 'rotate(8deg)  scale(1.05)', opacity: 1, offset: 0.3 },
+				{ transform: 'rotate(-6deg) scale(1.03)', opacity: 1, offset: 0.45 },
+				{ transform: 'rotate(6deg)  scale(1.03)', opacity: 1, offset: 0.6 },
+				{ transform: 'rotate(0deg)  scale(1)', opacity: 0 },
+			],
+			{ duration: this._anim.iconDuration, easing: 'ease' },
+		);
 	}
 
 	/**
