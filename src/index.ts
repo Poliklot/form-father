@@ -588,7 +588,7 @@ export default class Form {
 	 * @param {String} text - Текст ошибки.
 	 */
 	private showErrorForm(text: string) {
-		const inputWrappersList = this.$el.querySelectorAll('.input__wrapper');
+		const inputWrappersList = this.$el.querySelectorAll(this.config.inputWrapperSelector!);
 		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1] as HTMLElement;
 		let $errorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement;
 
@@ -640,7 +640,7 @@ export default class Form {
 
 	/** Скрывает ошибку под полями ввода - ошибку, относящуюся ко всей форме. */
 	private hideErrorForm() {
-		const inputWrappersList = this.$el.querySelectorAll('.input__wrapper');
+		const inputWrappersList = this.$el.querySelectorAll(this.config.inputWrapperSelector!);
 		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1];
 		const nextElement = $lastInputWrapper.nextElementSibling as HTMLElement;
 		if (nextElement && nextElement.classList.contains('error-block-under-input__wrapper')) {
