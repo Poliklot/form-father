@@ -453,7 +453,7 @@ export default class Form {
 	 * Для одного поля показывается только первая ошибка. Неизвестные правила фиксируются `console.warn` и исключаются ДО
 	 * валидации, поэтому валидационный цикл больше не проверяет их наличие.
 	 */
-	async validate(): Promise<boolean> {
+	async validate($block: HTMLElement = this.$el): Promise<boolean> {
 		/* ---------- финальная схема (defaults + config) ---------- */
 		const schema: ValidationSchema = {
 			...(Form.defaultValidationSchema || {}),
@@ -511,7 +511,7 @@ export default class Form {
 				const { rule, params } = typeof r === 'string' ? { rule: r, params: undefined } : r;
 				const vd = getValidator(rule)!; // гарантированно существует
 
-				const passed = await vd.fn($input.value, $input, this.$el, params);
+				const passed = await vd.fn($input.value, $input, $block, params);
 				if (!passed) {
 					ok = false;
 					const msg = msgs[rule] ?? vd.defaultMessage;
@@ -529,8 +529,8 @@ export default class Form {
 			const { selector, rules = [], messages = {} } = def as any;
 
 			const nodeList = selector
-				? this.$el.querySelectorAll(selector) // явный CSS-селектор
-				: this.$el.querySelectorAll(`[data-validate="${key}"]`); // fallback по name
+				? $block.querySelectorAll(selector) // явный CSS-селектор
+				: $block.querySelectorAll(`[data-validate="${key}"]`); // fallback по name
 
 			for (const $input of Array.from(nodeList) as HTMLInputElement[]) {
 				if (processed.has($input)) continue;
@@ -541,7 +541,7 @@ export default class Form {
 		}
 
 		/* ---------- 2. inputs только с data-custom ---------- */
-		const rest = Array.from(this.$el.querySelectorAll<HTMLInputElement>('[data-custom-validate]')).filter(
+		const rest = Array.from($block.querySelectorAll<HTMLInputElement>('[data-custom-validate]')).filter(
 			$i => !processed.has($i),
 		);
 
