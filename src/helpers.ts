@@ -207,8 +207,19 @@ export function parseCommonResponseProperties(responseBody: any): void {
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'reload')) {
 		if (responseBody.reload === true) window.location.reload();
 	}
-	if (Object.prototype.hasOwnProperty.call(responseBody, 'error-toast')) {
-		(window as any).showToast(responseBody['error-toast']);
+
+	type ToastKey = 'success-toast' | 'error-toast' | 'warn-toast' | 'info-toast' | 'custom-toast';
+	const toastMap = {
+		'success-toast': 'success',
+		'error-toast': 'error',
+		'warn-toast': 'warn',
+		'info-toast': 'info',
+		'custom-toast': 'custom',
+	};
+	for (const key in toastMap) {
+		if (Object.prototype.hasOwnProperty.call(responseBody, key)) {
+			(window as any).showToast({ type: toastMap[key as ToastKey], title: responseBody[key] });
+		}
 	}
 }
 
