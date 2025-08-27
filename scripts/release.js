@@ -8,11 +8,11 @@ import ora from 'ora';
 (async () => {
 	const spinner = ora();
 
-	try {
-		// Пути к файлам package.json
-		const rootPackagePath = './package.json';
-		const packagePackagePath = './package/package.json';
+	// Пути к файлам package.json
+	const rootPackagePath = './package.json';
+	const packagePackagePath = './package/package.json';
 
+	try {
 		// Читаем package.json из корня и package/
 		const rootPkg = JSON.parse(fs.readFileSync(rootPackagePath, 'utf-8'));
 		const pkg = JSON.parse(fs.readFileSync(packagePackagePath, 'utf-8'));
@@ -87,7 +87,7 @@ import ora from 'ora';
 				type: 'confirm',
 				name: 'publish',
 				message: 'Опубликовать пакет на npm?',
-				default: false,
+				default: true,
 			},
 		]);
 
@@ -136,6 +136,24 @@ import ora from 'ora';
 		// Удаляем файл с списком скопированных элементов
 		fs.unlinkSync('./copiedItems.json');
 		spinner.succeed('Удалены временные файлы!');
-		process.exit(1);
 	}
+
+	// Запрос подтверждения на создание коммита и пуш в ветку
+	const { commit_and_push } = await inquirer.prompt([
+		{
+			type: 'confirm',
+			name: 'commit_and_push',
+			message: 'Закомитить и запушить package.json`ы?',
+			default: true,
+		},
+	]);
+
+	if (commit_and_push) {
+		execSync(`git add ${rootPackagePath} ${packagePackagePath}`, { stdio: 'inherit', cwd: '.' });
+		spinner.succeed(`Добавлены файлы ${rootPackagePath} и ${packagePackagePath}`);
+		execSync(`git commit -m 'update: Обновлены верcии пакетов.' && git push`, { stdio: 'inherit', cwd: '.' });
+		spinner.succeed('Коммит отправлен в удаленный репозиторий!');
+	}
+
+	process.exit(1);
 })();

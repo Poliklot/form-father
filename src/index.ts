@@ -6,9 +6,36 @@ import {
 	closest,
 	isPhoneValid,
 } from './helpers';
+import { getValidator } from './validators';
+
+export * from './validators';
+
+type ValidationSchema = Record<
+	string,
+	{
+		rules: (string | { rule: string; params?: any })[];
+		selector: string;
+		messages?: Record<string, string>;
+	}
+>;
 
 /** Параметры формы. */
 interface FormOptions {
+	/**
+	 * Функция обратного вызова. Запускается, перед началом валидации формы.
+	 *
+	 * @param formInstance - Инстанс формы.
+	 */
+	onBeforeValidate?: (formInstance: Form) => void;
+
+	/**
+	 * Функция обратного вызова. Запускается, когда закончилась валидация, но не началась отправка.
+	 *
+	 * @param isValid - Статус валидации.
+	 * @param formInstance - Инстанс формы.
+	 */
+	onAfterValidate?: (isValid: boolean, formInstance: Form) => void;
+
 	/**
 	 * Функция обратного вызова. Запускается, когда форма отправляется.
 	 *
@@ -64,14 +91,11 @@ interface FormOptions {
 	 */
 	inputWrapperSelector?: string;
 
-	/**
-	 * Пользовательская функция для проверки телефона. По умолчанию стандартный `isPhoneValid` для русских номеров
-	 * телефонов.
-	 */
-	validatePhone?: (input: HTMLInputElement) => boolean;
-
 	/** Функция для обёртки отправляемых данных. */
 	wrapData?: (data: Record<string, any>) => Record<string, any>;
+
+	/** Схема валидации: поле → массив правил + override-сообщения */
+	validationSchema?: ValidationSchema;
 }
 
 interface ErrorResponse {
@@ -92,7 +116,7 @@ interface ResponseBody {
  * @class
  */
 export default class Form {
-	private $el: HTMLFormElement;
+	public $el: HTMLFormElement;
 	private options: FormOptions;
 	private config: FormOptions;
 	private $submit: HTMLInputElement | HTMLButtonElement | null = null;
@@ -101,6 +125,28 @@ export default class Form {
 	private $licensesCheckbox: HTMLInputElement | null = null;
 
 	private static defaultParams: Partial<FormOptions> = {};
+	static defaultValidationSchema: ValidationSchema = {
+		tel: {
+			selector: 'input[type="tel"]',
+			rules: ['tel'],
+		},
+		email: {
+			selector: 'input[type="email"]',
+			rules: ['email'],
+		},
+		required: {
+			selector: '[required]',
+			rules: ['required'],
+		},
+		url: {
+			selector: 'input[type="url"]',
+			rules: ['url'],
+		},
+		'not-numbers': {
+			selector: 'input[data-validate="not-numbers"]',
+			rules: ['not-numbers'],
+		},
+	};
 
 	/**
 	 * Создать форму.
@@ -156,17 +202,19 @@ export default class Form {
 		this.inputs = this.$el.querySelectorAll(this.config.inputSelector!) as NodeListOf<
 			HTMLInputElement | HTMLTextAreaElement
 		>;
-		this.$licensesCheckbox = this.$el.querySelector('input[data-input-name="user-consent"]') as HTMLInputElement;
 
-		if (this.$licensesCheckbox) {
-			if (this.$licensesCheckbox.checked) this.enableSubmit();
-			else this.disableSubmit();
+		/* TODO: Добавить параметр с возможностью отключать/включать кнопку, в зависимости от валидности поля. */
+		// this.$licensesCheckbox = this.$el.querySelector('input[data-input-name="user-consent"]') as HTMLInputElement;
 
-			this.$licensesCheckbox.addEventListener('change', () => {
-				if (this.$licensesCheckbox!.checked) this.enableSubmit();
-				else this.disableSubmit();
-			});
-		}
+		// if (this.$licensesCheckbox) {
+		// 	if (this.$licensesCheckbox.checked) this.enableSubmit();
+		// 	else this.disableSubmit();
+
+		// 	this.$licensesCheckbox.addEventListener('change', () => {
+		// 		if (this.$licensesCheckbox!.checked) this.enableSubmit();
+		// 		else this.disableSubmit();
+		// 	});
+		// }
 
 		const sendData = async (): Promise<Response> => {
 			const action = this.$el.getAttribute('action') || '';
@@ -270,10 +318,15 @@ export default class Form {
 			}
 		};
 
-		this.$el.addEventListener('submit', e => {
+		this.$el.addEventListener('submit', async e => {
 			e.preventDefault();
-			if (this.checkInputs() && (!this.$licensesCheckbox || (this.$licensesCheckbox && this.$licensesCheckbox.checked)))
-				submit();
+			this.config.onBeforeValidate?.(this);
+
+			const isValid = await this.validate();
+
+			this.config.onAfterValidate?.(isValid, this);
+
+			if (isValid) submit();
 		});
 	}
 
@@ -389,116 +442,120 @@ export default class Form {
 	}
 
 	/**
-	 * Проверяет все поля ввода на корректность их заполнения.
+	 * Проверяет все поля ввода.
 	 *
-	 * Проверяются все поля ввода и если поле некорректно заполнено показывают ошибки рядом с полем ввода.
+	 * Порядок для КАЖДОГО `<input>`:
 	 *
-	 * @returns {boolean} Корректно заполнены или нет (true/false).
+	 * 1. `required` — если атрибут `required`
+	 * 2. правила из `validationSchema`
+	 * 3. правила из `data-custom-validate`
+	 *
+	 * Для одного поля показывается только первая ошибка. Неизвестные правила фиксируются `console.warn` и исключаются ДО
+	 * валидации, поэтому валидационный цикл больше не проверяет их наличие.
 	 */
-	private checkInputs(): boolean {
-		let isCorrect = true;
-		const radioGroups: { [key: string]: { [key: number]: HTMLInputElement } } = {};
-		const inputsList: HTMLInputElement[] = [];
-		this.inputs?.forEach($inputEl => {
-			const $input = $inputEl as HTMLInputElement;
-			const inputType = $input.getAttribute('data-check-type') || $input.getAttribute('type') || '';
+	async validate($block: HTMLElement = this.$el): Promise<boolean> {
+		/* ---------- финальная схема (defaults + config) ---------- */
+		const schema: ValidationSchema = {
+			...(Form.defaultValidationSchema || {}),
+			...(this.config.validationSchema || {}),
+		};
 
-			if ($input.tagName === 'SELECT') {
-				const selectedOption = ($input as unknown as HTMLSelectElement).selectedOptions[0];
-				if (selectedOption && selectedOption.value === '' && $input.hasAttribute('required')) {
-					this.showError($input, 'Пустое значение');
-					inputsList.push($input);
-					isCorrect = false;
-				}
-			} else if (inputType === 'checkbox') {
-				if ($input.hasAttribute('required') && !$input.checked) {
-					this.showError($input, 'Необходимо согласие');
-					inputsList.push($input);
-					isCorrect = false;
-				}
-			} else if (
-				this.config.customTypeError?.name !== inputType ||
-				($input.tagName === 'TEXTAREA' && !this.config.customTypeError)
-			) {
-				if ($input.value.length > 0) {
-					if (inputType === 'email') {
-						if (!isEmailValid($input.value)) {
-							this.showError($input, 'Неверный формат');
-							inputsList.push($input);
-							isCorrect = false;
-						}
-					}
-					if (inputType === 'tel') {
-						const isPhoneValidChecker =
-							this.config.validatePhone ||
-							(($input: HTMLInputElement) => {
-								return isPhoneValid($input.value);
-							});
-						if (!isPhoneValidChecker($input)) {
-							this.showError($input, 'Неверный формат');
-							inputsList.push($input);
-							isCorrect = false;
-						}
-					}
-					if (inputType === 'url') {
-						if (!isUrlValid($input.value)) {
-							this.showError($input, 'Неверный формат');
-							inputsList.push($input);
-							isCorrect = false;
-						}
-					}
-					if (inputType === 'text') {
-						if ($input.getAttribute('data-check-type') === 'not-numbers') {
-							if (/[0-9]/.test($input.value)) {
-								this.showError($input, 'Неверный формат');
-								inputsList.push($input);
-								isCorrect = false;
-							}
-						}
-					}
-					if (inputType === 'radio') {
-						const name = $input.getAttribute('name') || '';
-						if (!radioGroups[name]) {
-							radioGroups[name] = {};
-						}
-						radioGroups[name][Object.keys(radioGroups[name]).length] = $input;
-					}
-				} else if ($input.hasAttribute('required')) {
-					this.showError($input, 'Пустое значение');
-					inputsList.push($input);
-					isCorrect = false;
+		const warnUnknown = (r: string) => console.warn(`[FormFather] Unknown validation rule "${r}"`);
+
+		const erroredInputs: HTMLInputElement[] = [];
+		const processed = new WeakSet<HTMLInputElement>();
+		let ok = true;
+
+		/* ---------- helpers ---------- */
+
+		/** Собирает и тут же фильтрует unknown-rules */
+		const collectRules = (
+			$input: HTMLInputElement,
+			fromSchema: (string | { rule: string; params?: any })[] = [],
+		): (string | { rule: string; params?: any })[] => {
+			const list: (string | { rule: string; params?: any })[] = [];
+
+			if ($input.hasAttribute('required')) list.push('required'); // 1
+			list.push(...fromSchema); // 2
+
+			const custom = ($input.getAttribute('data-custom-validate') ?? '')
+				.split(',')
+				.map(s => s.trim())
+				.filter(Boolean);
+			list.push(...custom); // 3
+
+			/* —–– предварительная фильтрация unknown ––– */
+			const filtered: typeof list = [];
+			for (const r of list) {
+				const ruleName = typeof r === 'string' ? r : r.rule;
+				if (getValidator(ruleName)) filtered.push(r);
+				else warnUnknown(ruleName);
+			}
+			return filtered;
+		};
+
+		const validateInput = async (
+			$input: HTMLInputElement,
+			rules: (string | { rule: string; params?: any })[],
+			msgs: Record<string, string> = {},
+		) => {
+			const empty =
+				$input.type === 'checkbox' || $input.type === 'radio' ? !$input.checked : $input.value.trim().length === 0;
+
+			if (empty && !rules.includes('required')) {
+				this.hideError($input);
+				return;
+			}
+
+			for (const r of rules) {
+				const { rule, params } = typeof r === 'string' ? { rule: r, params: undefined } : r;
+				const vd = getValidator(rule)!; // гарантированно существует
+
+				const passed = await vd.fn($input.value, $input, $block, params);
+				if (!passed) {
+					ok = false;
+					const msg = msgs[rule] ?? vd.defaultMessage;
+					this.showError($input, msg);
+					erroredInputs.push($input);
+					return; // первую ошибку отобразили
 				}
 			}
-		});
 
-		if (Object.keys(radioGroups).length > 0) {
-			for (const key in radioGroups) {
-				const group = radioGroups[key];
-				let isRequired = false;
-				let $checkedInput: HTMLInputElement | null = null;
+			this.hideError($input);
+		};
 
-				for (const keyGroup in group) {
-					const $radio = group[keyGroup];
-					if ($radio.hasAttribute('required')) isRequired = true;
-					if ($radio.checked) {
-						if ($checkedInput === null) {
-							$checkedInput = $radio;
-						} else {
-							return false;
-						}
-					}
-				}
+		/* ---------- 1. inputs из schema (config + defaults) ---------- */
+		for (const [key, def] of Object.entries(schema)) {
+			const { selector, rules = [], messages = {} } = def as any;
 
-				if ($checkedInput === null && isRequired) {
-					this.showErrorForm('Необходимо указать оценку');
-					return false;
-				}
+			const nodeList = selector
+				? $block.querySelectorAll(selector) // явный CSS-селектор
+				: $block.querySelectorAll(`[data-validate="${key}"]`); // fallback по name
+
+			for (const $input of Array.from(nodeList) as HTMLInputElement[]) {
+				if (processed.has($input)) continue;
+				processed.add($input);
+
+				await validateInput($input, collectRules($input, rules), messages);
 			}
 		}
 
-		if (this.config.scrollToFirstErroredInput === true) this.scrollToFirstErroredInput(inputsList);
+		/* ---------- 2. inputs только с data-custom ---------- */
+		const rest = Array.from($block.querySelectorAll<HTMLInputElement>('[data-custom-validate]')).filter(
+			$i => !processed.has($i),
+		);
 
-		return isCorrect;
+		for (const $input of rest) {
+			processed.add($input);
+			await validateInput($input, collectRules($input, []));
+		}
+
+		/* ---------- scroll ---------- */
+		if (!ok && this.config.scrollToFirstErroredInput) {
+			this.scrollToFirstErroredInput(erroredInputs);
+		}
+
+		return ok;
 	}
 
 	/** Блокирует кнопку отправки данных. */
@@ -525,70 +582,199 @@ export default class Form {
 		});
 	}
 
+	/** Общие настройки анимаций (можно подправить под вкус) */
+	private readonly _anim = {
+		duration: 220,
+		easing: 'ease',
+		paddingTopOpened: 16,
+		iconDuration: 700,
+	};
+
+	private _prefersReducedMotion(): boolean {
+		return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+	}
+
+	private _canAnimate(el?: Element | null): boolean {
+		return !!(el && 'animate' in el && !this._prefersReducedMotion());
+	}
+
+	private _cancelAnimations(el: Element | null | undefined) {
+		// Отменяем все активные WAAPI-анимации у элемента
+		// @ts-ignore
+		el?.getAnimations?.().forEach((a: Animation) => a.cancel());
+	}
+
 	/**
 	 * Показывает ошибку под полями ввода - ошибку, относящуюся ко всей форме.
 	 *
 	 * @param {String} text - Текст ошибки.
 	 */
 	private showErrorForm(text: string) {
-		const inputWrappersList = this.$el.querySelectorAll('.input__wrapper');
+		const inputWrappersList = this.$el.querySelectorAll(this.config.inputWrapperSelector!);
 		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1] as HTMLElement;
-		let $errorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement;
+		let $errorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement | null;
 
 		if (!$errorWrapper || !($lastInputWrapper.nextElementSibling === $errorWrapper)) {
 			$errorWrapper = document.createElement('div');
 			$errorWrapper.className = 'error-block-under-input__wrapper';
 			$errorWrapper.innerHTML = `
-        <div class="error-block-under-input error-block-under-input--warning">
-          <div class="error-block-under-input__icon-wrapper">
-            <span class="error-block-under-input__icon">
-              <!-- SVG content -->
-            </span>
-            <span class="error-block-under-input__icon error-block-under-input__icon--animated" style="display:none;"></span>
-          </div>
-          <p class="error-block-under-input__text">
-            <span class="error-block-under-input__main-text">${text}</span>
-            <span class="error-block-under-input__secondary-text"></span>
-          </p>
-        </div>`;
+      <div class="error-block-under-input error-block-under-input--warning" style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;">
+        <div class="error-block-under-input__icon-wrapper" style="position:relative;width:20px;height:20px;">
+          <span class="error-block-under-input__icon" style="display:block;width:20px;height:20px;"></span>
+          <span class="error-block-under-input__icon error-block-under-input__icon--animated" style="display:block;position:absolute;inset:0;"></span>
+        </div>
+        <p class="error-block-under-input__text" style="margin:0;">
+          <span class="error-block-under-input__main-text"></span>
+          <span class="error-block-under-input__secondary-text"></span>
+        </p>
+      </div>
+    `;
+			// Стартовые inline-стили для анимаций
+			Object.assign($errorWrapper.style, {
+				boxSizing: 'border-box',
+				overflow: 'hidden',
+				height: '0px',
+				paddingTop: '0px',
+				opacity: '0',
+			} as CSSStyleDeclaration);
 			$lastInputWrapper.insertAdjacentElement('afterend', $errorWrapper);
 		} else {
-			$errorWrapper.classList.add('error-block-under-input--warning');
-			$errorWrapper.querySelector('.error-block-under-input__icon')!.innerHTML = '<!-- SVG content -->';
-			$errorWrapper.querySelector('.error-block-under-input__main-text')!.textContent = text;
+			// убедимся, что нужные стартовые inline-стили есть
+			$errorWrapper.style.boxSizing = 'border-box';
+			$errorWrapper.style.overflow = 'hidden';
 		}
 
-		this.$el.addEventListener(
-			'input',
-			() => {
-				this.hideErrorForm();
-			},
-			{ passive: true, once: true },
-		);
-
-		$errorWrapper.querySelector('.error-block-under-input')?.classList.remove('error-block-under-input--success');
-		const $secondaryText = $errorWrapper.querySelector('.error-block-under-input__secondary-text');
+		// Текст
+		($errorWrapper.querySelector('.error-block-under-input__main-text') as HTMLElement).textContent = text;
+		const $secondaryText = $errorWrapper.querySelector(
+			'.error-block-under-input__secondary-text',
+		) as HTMLElement | null;
 		if ($secondaryText) $secondaryText.textContent = '';
 
-		const currentHeight = parseFloat($errorWrapper.style.height) || 0;
-		const currentPaddingTop = parseFloat(window.getComputedStyle($errorWrapper).paddingTop) || 0;
-		const errorBlockHeight = ($errorWrapper.querySelector('.error-block-under-input') as HTMLElement).scrollHeight + 16;
+		// Сброс success-класса, если он устанавливался где-то в другом коде
+		$errorWrapper.querySelector('.error-block-under-input')?.classList.remove('error-block-under-input--success');
 
-		if (currentHeight !== errorBlockHeight) {
-			$errorWrapper.style.height = `${currentHeight}px`;
-			$errorWrapper.style.opacity = '0';
-			$errorWrapper.style.paddingTop = `${currentPaddingTop}px`;
+		// Посчитать целевую высоту
+		const $block = $errorWrapper.querySelector('.error-block-under-input') as HTMLElement;
+
+		// Чтобы корректно мерить, временно выставим auto
+		const prevHeight = $errorWrapper.style.height;
+		const prevPadding = $errorWrapper.style.paddingTop;
+		$errorWrapper.style.height = 'auto';
+		$errorWrapper.style.paddingTop = `${this._anim.paddingTopOpened}px`;
+		const targetHeight = $errorWrapper.clientHeight; // фактическая высота открытого состояния
+
+		// Вернуть стартовое состояние (схлопнуто)
+		$errorWrapper.style.height = prevHeight || '0px';
+		$errorWrapper.style.paddingTop = prevPadding || '0px';
+
+		// Если уже раскрыт на нужную высоту — просто «дзынь» иконке и выходим
+		if (
+			parseFloat($errorWrapper.style.height) === targetHeight &&
+			parseFloat($errorWrapper.style.opacity || '1') === 1
+		) {
+			this._ringIcon($errorWrapper);
+		} else {
+			// Анимация раскрытия
+			this._cancelAnimations($errorWrapper);
+			if (this._canAnimate($errorWrapper)) {
+				const anim = $errorWrapper.animate(
+					[
+						{
+							height: `${parseFloat($errorWrapper.style.height) || 0}px`,
+							paddingTop: `${parseFloat($errorWrapper.style.paddingTop) || 0}px`,
+							opacity: parseFloat($errorWrapper.style.opacity || '0'),
+						},
+						{
+							height: `${targetHeight}px`,
+							paddingTop: `${this._anim.paddingTopOpened}px`,
+							opacity: 1,
+						},
+					],
+					{ duration: this._anim.duration, easing: this._anim.easing, fill: 'forwards' },
+				);
+				anim.addEventListener('finish', () => {
+					// После анимации: фиксируем авто-высоту, чтобы текст мог меняться
+					$errorWrapper.style.height = 'auto';
+					$errorWrapper.style.paddingTop = `${this._anim.paddingTopOpened}px`;
+					$errorWrapper.style.opacity = '1';
+				});
+			} else {
+				// Фолбэк без анимации
+				$errorWrapper.style.height = 'auto';
+				$errorWrapper.style.paddingTop = `${this._anim.paddingTopOpened}px`;
+				$errorWrapper.style.opacity = '1';
+			}
+			this._ringIcon($errorWrapper);
 		}
+
+		// Скрыть при первом вводе после показа
+		this.$el.addEventListener('input', () => this.hideErrorForm(), { passive: true, once: true });
 	}
 
 	/** Скрывает ошибку под полями ввода - ошибку, относящуюся ко всей форме. */
 	private hideErrorForm() {
-		const inputWrappersList = this.$el.querySelectorAll('.input__wrapper');
-		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1];
-		const nextElement = $lastInputWrapper.nextElementSibling as HTMLElement;
-		if (nextElement && nextElement.classList.contains('error-block-under-input__wrapper')) {
-			// Анимация скрытия ошибки
+		const inputWrappersList = this.$el.querySelectorAll(this.config.inputWrapperSelector!);
+		const $lastInputWrapper = inputWrappersList[inputWrappersList.length - 1] as HTMLElement;
+		const $errorWrapper = $lastInputWrapper.nextElementSibling as HTMLElement | null;
+		if (!$errorWrapper || !$errorWrapper.classList.contains('error-block-under-input__wrapper')) return;
+
+		// Текущая высота (если была auto) — измерим и зафиксируем
+		const wasAuto = $errorWrapper.style.height === '' || $errorWrapper.style.height === 'auto';
+		if (wasAuto) {
+			$errorWrapper.style.height = `${$errorWrapper.clientHeight}px`;
 		}
+		$errorWrapper.style.paddingTop = $errorWrapper.style.paddingTop || `${this._anim.paddingTopOpened}px`;
+		$errorWrapper.style.opacity = $errorWrapper.style.opacity || '1';
+
+		// Анимация схлопывания
+		this._cancelAnimations($errorWrapper);
+		if (this._canAnimate($errorWrapper)) {
+			const anim = $errorWrapper.animate(
+				[
+					{
+						height: `${parseFloat($errorWrapper.style.height) || $errorWrapper.clientHeight}px`,
+						paddingTop: `${parseFloat($errorWrapper.style.paddingTop) || this._anim.paddingTopOpened}px`,
+						opacity: parseFloat($errorWrapper.style.opacity || '1'),
+					},
+					{ height: '0px', paddingTop: '0px', opacity: 0 },
+				],
+				{ duration: this._anim.duration, easing: this._anim.easing, fill: 'forwards' },
+			);
+			anim.addEventListener('finish', () => {
+				// После закрытия можно удалить узел или оставить схлопнутым
+				$errorWrapper.remove();
+				// Если хотите оставлять в DOM:
+				// $errorWrapper.style.height = '0px';
+				// $errorWrapper.style.paddingTop = '0px';
+				// $errorWrapper.style.opacity = '0';
+			});
+		} else {
+			// Фолбэк без анимации
+			$errorWrapper.remove();
+		}
+	}
+
+	/** Короткая анимация иконки без CSS */
+	private _ringIcon($wrapper: HTMLElement) {
+		const $icon = $wrapper.querySelector('.error-block-under-input__icon--animated') as HTMLElement | null;
+		if (!$icon) return;
+
+		this._cancelAnimations($icon);
+		if (!this._canAnimate($icon)) return;
+
+		// Небольшое «качание» и вспышка прозрачности
+		$icon.animate(
+			[
+				{ transform: 'rotate(0deg) scale(1)', opacity: 0 },
+				{ transform: 'rotate(-8deg) scale(1.05)', opacity: 1, offset: 0.15 },
+				{ transform: 'rotate(8deg)  scale(1.05)', opacity: 1, offset: 0.3 },
+				{ transform: 'rotate(-6deg) scale(1.03)', opacity: 1, offset: 0.45 },
+				{ transform: 'rotate(6deg)  scale(1.03)', opacity: 1, offset: 0.6 },
+				{ transform: 'rotate(0deg)  scale(1)', opacity: 0 },
+			],
+			{ duration: this._anim.iconDuration, easing: 'ease' },
+		);
 	}
 
 	/**

@@ -208,16 +208,7 @@ export function parseCommonResponseProperties(responseBody: any): void {
 		if (responseBody.reload === true) window.location.reload();
 	}
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'error-toast')) {
-		const $formErrorToast = document.querySelector('[data-toast-name="formErrorToast"]');
-		if ($formErrorToast) {
-			const $toastText = $formErrorToast.querySelector('.toast__text');
-			if ($toastText) {
-				$toastText.textContent = responseBody['error-toast'];
-				(window as any).Toast.showToast('formErrorToast', {
-					removeAfterClose: false,
-				});
-			}
-		}
+		(window as any).showToast(responseBody['error-toast']);
 	}
 }
 
