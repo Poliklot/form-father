@@ -290,7 +290,6 @@ export default class Form {
 				this.config.onResponse?.(responseBody, this);
 
 				if (response.status === 200) {
-					parseCommonResponseProperties(responseBody);
 					if (responseBody.success === true) {
 						this.config.onResponseSuccess?.(responseBody, this);
 					} else {
@@ -314,6 +313,7 @@ export default class Form {
 							}
 						}
 					}
+					parseCommonResponseProperties(responseBody);
 				}
 			}
 		};

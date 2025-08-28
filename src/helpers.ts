@@ -204,9 +204,16 @@ export function parseCommonResponseProperties(responseBody: any): void {
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'redirect-url')) {
 		window.location.href = responseBody['redirect-url'];
 	}
+
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'reload')) {
 		if (responseBody.reload === true) window.location.reload();
 	}
+
+	if (Object.prototype.hasOwnProperty.call(responseBody, 'toast')) {
+		(window as any).showToast(responseBody['toast']);
+	}
+
+	/** @deprecated */
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'error-toast')) {
 		(window as any).showToast(responseBody['error-toast']);
 	}
