@@ -203,19 +203,24 @@ export function serializeToFormData($element: HTMLElement): FormData {
 export function parseCommonResponseProperties(responseBody: any): void {
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'redirect-url')) {
 		window.location.href = responseBody['redirect-url'];
+	} else if (Object.prototype.hasOwnProperty.call(responseBody, 'reload')) {
+		if (responseBody.reload === true) {
+			window.location.reload();
+		}
 	}
+	// Не показываем тост если делается редирект или обновление страницы (чтобы небыло вспышек) - в этом случае тосты обрабытываются в ответе onResponseSuccess | onResponseUnsuccess
+	else {
+		if (Object.prototype.hasOwnProperty.call(responseBody, 'toast')) {
+			const toasts = responseBody['toast'];
+			const normalizedToasts = Array.isArray(toasts) ? toasts : [toasts];
 
-	if (Object.prototype.hasOwnProperty.call(responseBody, 'reload')) {
-		if (responseBody.reload === true) window.location.reload();
-	}
-
-	if (Object.prototype.hasOwnProperty.call(responseBody, 'toast')) {
-		(window as any).showToast(responseBody['toast']);
-	}
-
-	/** @deprecated */
-	if (Object.prototype.hasOwnProperty.call(responseBody, 'error-toast')) {
-		(window as any).showToast(responseBody['error-toast']);
+			normalizedToasts.forEach(toast => {
+				(window as any).showToast(toast);
+			});
+		} else if (Object.prototype.hasOwnProperty.call(responseBody, 'error-toast')) {
+			/** @deprecated */
+			(window as any).showToast(responseBody['error-toast']);
+		}
 	}
 }
 
