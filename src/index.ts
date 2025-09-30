@@ -10,6 +10,23 @@ import { getValidator } from './validators';
 
 export * from './validators';
 
+// --- shared cross-file state (singleton via globalThis) ---
+const FORM_GLOBAL_KEY = Symbol.for('formfather.shared');
+
+type SharedState = {
+	defaultParams: Partial<FormOptions>;
+	defaultValidationSchema?: ValidationSchema;
+};
+
+const __shared: SharedState =
+	// уже существует? используем его
+	(globalThis as any)[FORM_GLOBAL_KEY] ??
+	// иначе создаём
+	((globalThis as any)[FORM_GLOBAL_KEY] = {
+		defaultParams: {},
+		defaultValidationSchema: undefined,
+	});
+
 type ValidationSchema = Record<
 	string,
 	{
@@ -110,6 +127,30 @@ interface ResponseBody {
 	errors?: ErrorResponse[];
 }
 
+/** Изначальная дефолтная схема. */
+const INITIAL_DEFAULT_SCHEMA: ValidationSchema = {
+	tel: {
+		selector: 'input[type="tel"]',
+		rules: ['tel'],
+	},
+	email: {
+		selector: 'input[type="email"]',
+		rules: ['email'],
+	},
+	required: {
+		selector: '[required]',
+		rules: ['required'],
+	},
+	url: {
+		selector: 'input[type="url"]',
+		rules: ['url'],
+	},
+	'not-numbers': {
+		selector: 'input[data-validate="not-numbers"]',
+		rules: ['not-numbers'],
+	},
+};
+
 /**
  * Реализует форму отправки данных.
  *
@@ -124,29 +165,20 @@ export default class Form {
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
 	private $licensesCheckbox: HTMLInputElement | null = null;
 
-	private static defaultParams: Partial<FormOptions> = {};
-	static defaultValidationSchema: ValidationSchema = {
-		tel: {
-			selector: 'input[type="tel"]',
-			rules: ['tel'],
-		},
-		email: {
-			selector: 'input[type="email"]',
-			rules: ['email'],
-		},
-		required: {
-			selector: '[required]',
-			rules: ['required'],
-		},
-		url: {
-			selector: 'input[type="url"]',
-			rules: ['url'],
-		},
-		'not-numbers': {
-			selector: 'input[data-validate="not-numbers"]',
-			rules: ['not-numbers'],
-		},
-	};
+	private static get defaultParams(): Partial<FormOptions> {
+		return __shared.defaultParams;
+	}
+	private static set defaultParams(v: Partial<FormOptions>) {
+		__shared.defaultParams = v;
+	}
+
+	static get defaultValidationSchema(): ValidationSchema {
+		return (__shared.defaultValidationSchema ??= INITIAL_DEFAULT_SCHEMA);
+	}
+
+	static set defaultValidationSchema(v: ValidationSchema) {
+		__shared.defaultValidationSchema = v;
+	}
 
 	/**
 	 * Создать форму.
