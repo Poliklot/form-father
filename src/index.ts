@@ -531,6 +531,8 @@ export default class Form {
 			rules: (string | { rule: string; params?: any })[],
 			msgs: Record<string, string> = {},
 		) => {
+			if ($input.hasAttribute('data-no-validate')) return;
+
 			const empty =
 				$input.type === 'checkbox' || $input.type === 'radio' ? !$input.checked : $input.value.trim().length === 0;
 
@@ -584,7 +586,7 @@ export default class Form {
 
 		/* ---------- scroll ---------- */
 		if (!ok && this.config.scrollToFirstErroredInput) {
-			this.scrollToFirstErroredInput(erroredInputs);
+			this.scrollToFirstErroredInput(erroredInputs.filter(item => !item.hasAttribute('data-no-error-scroll')));
 		}
 
 		return ok;
