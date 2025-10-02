@@ -163,6 +163,7 @@ export default class Form {
 	private $submit: HTMLInputElement | HTMLButtonElement | null = null;
 	private waitResponse: boolean = false;
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
+	private _onSubmitHandler?: (e: Event) => void;
 
 	private static get defaultParams(): Partial<FormOptions> {
 		return __shared.defaultParams;
@@ -349,7 +350,7 @@ export default class Form {
 			}
 		};
 
-		this.$el.addEventListener('submit', async e => {
+		this._onSubmitHandler = async (e: Event) => {
 			e.preventDefault();
 			this.config.onBeforeValidate?.(this);
 
@@ -358,7 +359,8 @@ export default class Form {
 			this.config.onAfterValidate?.(isValid, this);
 
 			if (isValid) submit();
-		});
+		};
+		this.$el.addEventListener('submit', this._onSubmitHandler as EventListener);
 	}
 
 	/**
@@ -808,6 +810,41 @@ export default class Form {
 			],
 			{ duration: this._anim.iconDuration, easing: 'ease' },
 		);
+	}
+
+	/** Полностью снимает слушатели и чистит артефакты формы. */
+	public destroy(): void {
+		// 1) Снять submit-слушатель
+		if (this._onSubmitHandler) {
+			this.$el.removeEventListener('submit', this._onSubmitHandler as EventListener);
+			this._onSubmitHandler = undefined;
+		}
+
+		// 2) Удалить формовый error-блок под инпутами (если есть)
+		const formErrorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement | null;
+		if (formErrorWrapper) {
+			this._cancelAnimations(formErrorWrapper);
+			formErrorWrapper.remove();
+		}
+
+		// 3) Скрыть/удалить лоадер на кнопке submit
+		this.$submit?.classList.remove('button--loading');
+		const btnLoader = this.$submit?.querySelector('.button__loader') as HTMLElement | null;
+		if (btnLoader) btnLoader.remove();
+
+		// 4) Сбросить ошибки у инпутов (если разметка позволяет)
+		const inputs = this.$el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
+		inputs.forEach($i => {
+			if ($i instanceof HTMLInputElement) this.hideError($i);
+		});
+
+		// 5) Убрать возможный флаг скролла
+		document.documentElement.removeAttribute('data-now-scrolling');
+
+		// 6) Очистить ссылки на элементы, чтобы помочь GC
+		this.inputs = null;
+		this.$submit = null;
+		this.waitResponse = false;
 	}
 
 	/**
