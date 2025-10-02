@@ -163,7 +163,6 @@ export default class Form {
 	private $submit: HTMLInputElement | HTMLButtonElement | null = null;
 	private waitResponse: boolean = false;
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
-	private $licensesCheckbox: HTMLInputElement | null = null;
 
 	private static get defaultParams(): Partial<FormOptions> {
 		return __shared.defaultParams;
