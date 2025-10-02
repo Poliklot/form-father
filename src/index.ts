@@ -546,13 +546,33 @@ export default class Form {
 				const { rule, params } = typeof r === 'string' ? { rule: r, params: undefined } : r;
 				const vd = getValidator(rule)!; // гарантированно существует
 
-				const passed = await vd.fn($input.value, $input, $block, params);
+				const raw = await vd.fn($input.value, $input, $block, params);
+				const isObj = typeof raw === 'object' && raw !== null;
+				const passed = isObj ? (raw as any).valid === true : !!raw;
+
+				// сайд-эффект (если есть)
+				if (isObj && (raw as any).effect) {
+					await (raw as any).effect({
+						value: $input.value,
+						$input,
+						$form: $block,
+						params,
+					});
+				}
+
 				if (!passed) {
 					ok = false;
-					const msg = msgs[rule] ?? vd.defaultMessage;
+					const r = raw as any;
+					const msg = (isObj && typeof r.message === 'string' && r.message) || msgs[rule] || vd.defaultMessage;
+
 					this.showError($input, msg);
 					erroredInputs.push($input);
 					return; // первую ошибку отобразили
+				}
+
+				// хотим прервать цепочку правил, даже если успех
+				if (isObj && (raw as any).stopOthers) {
+					return;
 				}
 			}
 
