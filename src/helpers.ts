@@ -202,10 +202,24 @@ export function serializeToFormData($element: HTMLElement): FormData {
  */
 export function parseCommonResponseProperties(responseBody: any): void {
 	if (Object.prototype.hasOwnProperty.call(responseBody, 'redirect-url')) {
-		window.location.href = responseBody['redirect-url'];
+		if (responseBody['redirect-url-delay']) {
+			const redirectUrlDelay: number = Number(responseBody['redirect-url-delay']);
+			setTimeout(() => {
+				window.location.href = responseBody['redirect-url'];
+			}, redirectUrlDelay);
+		} else {
+			window.location.href = responseBody['redirect-url'];
+		}
 	} else if (Object.prototype.hasOwnProperty.call(responseBody, 'reload')) {
 		if (responseBody.reload === true) {
-			window.location.reload();
+			if (responseBody['reload-delay']) {
+				const reloadDelay: number = Number(responseBody['reload-delay']);
+				setTimeout(() => {
+					window.location.reload();
+				}, reloadDelay);
+			} else {
+				window.location.reload();
+			}
 		}
 	}
 	// Не показываем тост если делается редирект или обновление страницы (чтобы небыло вспышек) - в этом случае тосты обрабытываются в ответе onResponseSuccess | onResponseUnsuccess
