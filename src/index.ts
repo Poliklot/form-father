@@ -10,6 +10,23 @@ import { getValidator } from './validators';
 
 export * from './validators';
 
+// --- shared cross-file state (singleton via globalThis) ---
+const FORM_GLOBAL_KEY = Symbol.for('formfather.shared');
+
+type SharedState = {
+	defaultParams: Partial<FormOptions>;
+	defaultValidationSchema?: ValidationSchema;
+};
+
+const __shared: SharedState =
+	// уже существует? используем его
+	(globalThis as any)[FORM_GLOBAL_KEY] ??
+	// иначе создаём
+	((globalThis as any)[FORM_GLOBAL_KEY] = {
+		defaultParams: {},
+		defaultValidationSchema: undefined,
+	});
+
 type ValidationSchema = Record<
 	string,
 	{
@@ -110,6 +127,30 @@ interface ResponseBody {
 	errors?: ErrorResponse[];
 }
 
+/** Изначальная дефолтная схема. */
+const INITIAL_DEFAULT_SCHEMA: ValidationSchema = {
+	tel: {
+		selector: 'input[type="tel"]',
+		rules: ['tel'],
+	},
+	email: {
+		selector: 'input[type="email"]',
+		rules: ['email'],
+	},
+	required: {
+		selector: '[required]',
+		rules: ['required'],
+	},
+	url: {
+		selector: 'input[type="url"]',
+		rules: ['url'],
+	},
+	'not-numbers': {
+		selector: 'input[data-validate="not-numbers"]',
+		rules: ['not-numbers'],
+	},
+};
+
 /**
  * Реализует форму отправки данных.
  *
@@ -122,31 +163,22 @@ export default class Form {
 	private $submit: HTMLInputElement | HTMLButtonElement | null = null;
 	private waitResponse: boolean = false;
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
-	private $licensesCheckbox: HTMLInputElement | null = null;
+	private _onSubmitHandler?: (e: Event) => void;
 
-	private static defaultParams: Partial<FormOptions> = {};
-	static defaultValidationSchema: ValidationSchema = {
-		tel: {
-			selector: 'input[type="tel"]',
-			rules: ['tel'],
-		},
-		email: {
-			selector: 'input[type="email"]',
-			rules: ['email'],
-		},
-		required: {
-			selector: '[required]',
-			rules: ['required'],
-		},
-		url: {
-			selector: 'input[type="url"]',
-			rules: ['url'],
-		},
-		'not-numbers': {
-			selector: 'input[data-validate="not-numbers"]',
-			rules: ['not-numbers'],
-		},
-	};
+	private static get defaultParams(): Partial<FormOptions> {
+		return __shared.defaultParams;
+	}
+	private static set defaultParams(v: Partial<FormOptions>) {
+		__shared.defaultParams = v;
+	}
+
+	static get defaultValidationSchema(): ValidationSchema {
+		return (__shared.defaultValidationSchema ??= INITIAL_DEFAULT_SCHEMA);
+	}
+
+	static set defaultValidationSchema(v: ValidationSchema) {
+		__shared.defaultValidationSchema = v;
+	}
 
 	/**
 	 * Создать форму.
@@ -318,7 +350,7 @@ export default class Form {
 			}
 		};
 
-		this.$el.addEventListener('submit', async e => {
+		this._onSubmitHandler = async (e: Event) => {
 			e.preventDefault();
 			this.config.onBeforeValidate?.(this);
 
@@ -327,7 +359,8 @@ export default class Form {
 			this.config.onAfterValidate?.(isValid, this);
 
 			if (isValid) submit();
-		});
+		};
+		this.$el.addEventListener('submit', this._onSubmitHandler as EventListener);
 	}
 
 	/**
@@ -499,6 +532,8 @@ export default class Form {
 			rules: (string | { rule: string; params?: any })[],
 			msgs: Record<string, string> = {},
 		) => {
+			if ($input.hasAttribute('data-no-validate')) return;
+
 			const empty =
 				$input.type === 'checkbox' || $input.type === 'radio' ? !$input.checked : $input.value.trim().length === 0;
 
@@ -511,13 +546,33 @@ export default class Form {
 				const { rule, params } = typeof r === 'string' ? { rule: r, params: undefined } : r;
 				const vd = getValidator(rule)!; // гарантированно существует
 
-				const passed = await vd.fn($input.value, $input, $block, params);
+				const raw = await vd.fn($input.value, $input, $block, params);
+				const isObj = typeof raw === 'object' && raw !== null;
+				const passed = isObj ? (raw as any).valid === true : !!raw;
+
+				// сайд-эффект (если есть)
+				if (isObj && (raw as any).effect) {
+					await (raw as any).effect({
+						value: $input.value,
+						$input,
+						$form: $block,
+						params,
+					});
+				}
+
 				if (!passed) {
 					ok = false;
-					const msg = msgs[rule] ?? vd.defaultMessage;
+					const r = raw as any;
+					const msg = (isObj && typeof r.message === 'string' && r.message) || msgs[rule] || vd.defaultMessage;
+
 					this.showError($input, msg);
 					erroredInputs.push($input);
 					return; // первую ошибку отобразили
+				}
+
+				// хотим прервать цепочку правил, даже если успех
+				if (isObj && (raw as any).stopOthers) {
+					return;
 				}
 			}
 
@@ -552,7 +607,7 @@ export default class Form {
 
 		/* ---------- scroll ---------- */
 		if (!ok && this.config.scrollToFirstErroredInput) {
-			this.scrollToFirstErroredInput(erroredInputs);
+			this.scrollToFirstErroredInput(erroredInputs.filter(item => !item.hasAttribute('data-no-error-scroll')));
 		}
 
 		return ok;
@@ -775,6 +830,41 @@ export default class Form {
 			],
 			{ duration: this._anim.iconDuration, easing: 'ease' },
 		);
+	}
+
+	/** Полностью снимает слушатели и чистит артефакты формы. */
+	public destroy(): void {
+		// 1) Снять submit-слушатель
+		if (this._onSubmitHandler) {
+			this.$el.removeEventListener('submit', this._onSubmitHandler as EventListener);
+			this._onSubmitHandler = undefined;
+		}
+
+		// 2) Удалить формовый error-блок под инпутами (если есть)
+		const formErrorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement | null;
+		if (formErrorWrapper) {
+			this._cancelAnimations(formErrorWrapper);
+			formErrorWrapper.remove();
+		}
+
+		// 3) Скрыть/удалить лоадер на кнопке submit
+		this.$submit?.classList.remove('button--loading');
+		const btnLoader = this.$submit?.querySelector('.button__loader') as HTMLElement | null;
+		if (btnLoader) btnLoader.remove();
+
+		// 4) Сбросить ошибки у инпутов (если разметка позволяет)
+		const inputs = this.$el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
+		inputs.forEach($i => {
+			if ($i instanceof HTMLInputElement) this.hideError($i);
+		});
+
+		// 5) Убрать возможный флаг скролла
+		document.documentElement.removeAttribute('data-now-scrolling');
+
+		// 6) Очистить ссылки на элементы, чтобы помочь GC
+		this.inputs = null;
+		this.$submit = null;
+		this.waitResponse = false;
 	}
 
 	/**
