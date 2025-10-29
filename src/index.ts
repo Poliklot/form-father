@@ -164,6 +164,7 @@ export default class Form {
 	private waitResponse: boolean = false;
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
 	private _onSubmitHandler?: (e: Event) => void;
+	private _onSubmitClickHandler?: (e: Event) => void;
 
 	private static get defaultParams(): Partial<FormOptions> {
 		return __shared.defaultParams;
@@ -209,6 +210,19 @@ export default class Form {
 
 		if (this.$el) {
 			this.$submit = this.$el.querySelector('input[type="submit"], button[type="submit"]');
+
+			this._onSubmitClickHandler = async (e: Event) => {
+				e.preventDefault();
+				this.config.onBeforeValidate?.(this);
+				const isValid = await this.validate();
+				this.config.onAfterValidate?.(isValid, this);
+				if (isValid) {
+					await this.submit();
+				}
+			};
+
+			this.$submit?.addEventListener('click', this._onSubmitClickHandler as EventListener);
+
 			if (this.isCorrectArguments()) this.initialization();
 		} else {
 			console.warn('Empty $el');
@@ -248,108 +262,6 @@ export default class Form {
 		// 	});
 		// }
 
-		const sendData = async (): Promise<Response> => {
-			const action = this.$el.getAttribute('action') || '';
-			const method = this.$el.getAttribute('method')?.toUpperCase() || 'POST';
-			const enctype = this.$el.getAttribute('enctype') || 'application/x-www-form-urlencoded';
-			let body: BodyInit | null = null;
-			let headers: HeadersInit = {};
-
-			// Сбор данных из формы
-			const formData = serializeToFormData(this.$el);
-			let data: Record<string, any> = {};
-			formData.forEach((value, key) => {
-				data[key] = value;
-			});
-
-			if (this.config.logging) {
-				for (const key of formData.keys()) console.log(formData.get(key));
-			}
-
-			// Применение обёртки, если указано в настройках
-			if (typeof this.config.wrapData === 'function') {
-				data = this.config.wrapData(data);
-			}
-
-			switch (enctype) {
-				case 'application/x-www-form-urlencoded':
-					body = new URLSearchParams(serializeToFormData(this.$el) as any).toString();
-					headers['Content-Type'] = 'application/x-www-form-urlencoded';
-					break;
-
-				case 'multipart/form-data':
-					body = serializeToFormData(this.$el);
-					// ВАЖНО: Не указываем Content-Type, т.к. браузер сам добавит с корректной границей!
-					break;
-
-				case 'text/plain':
-					body = Array.from(serializeToFormData(this.$el))
-						.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
-						.join('\n');
-					headers['Content-Type'] = 'text/plain';
-					break;
-
-				case 'application/json':
-					body = JSON.stringify(data);
-					headers['Content-Type'] = 'application/json';
-					break;
-
-				default:
-					console.warn(`Неизвестный enctype: ${enctype}. Используется application/x-www-form-urlencoded.`);
-					body = new URLSearchParams(serializeToFormData(this.$el) as any).toString();
-					headers['Content-Type'] = 'application/x-www-form-urlencoded';
-			}
-
-			return fetch(action, {
-				method,
-				body,
-				headers,
-			});
-		};
-
-		const submit = async () => {
-			if (!this.waitResponse) {
-				if (this.config.showLoaderButton === true) this.showLoader();
-
-				this.config.onSubmit?.(this);
-				this.waitResponse = true;
-
-				const response = await sendData();
-				const responseBody: ResponseBody = await response.json();
-				this.waitResponse = false;
-
-				if (this.config.showLoaderButton === true) this.hideLoader();
-				this.config.onResponse?.(responseBody, this);
-
-				if (response.status === 200) {
-					if (responseBody.success === true) {
-						this.config.onResponseSuccess?.(responseBody, this);
-					} else {
-						this.config.onResponseUnsuccess?.(responseBody, this);
-						if (responseBody.error === true) {
-							if (responseBody['error-msg']) {
-								this.showErrorForm(responseBody['error-msg']);
-							}
-							if (responseBody.errors) {
-								const inputsList: HTMLInputElement[] = [];
-								responseBody.errors.forEach(error => {
-									const $input = this.$el.querySelector(`input[name="${error.name}"]`) as HTMLInputElement;
-									if ($input) {
-										inputsList.push($input);
-										this.showError($input, error['error-msg']);
-									} else {
-										console.warn(`Не найдено поле с именем: ${error.name}, для вывода ошибки: ${error['error-msg']}`);
-									}
-								});
-								if (this.config.scrollToFirstErroredInput === true) this.scrollToFirstErroredInput(inputsList);
-							}
-						}
-					}
-					parseCommonResponseProperties(responseBody);
-				}
-			}
-		};
-
 		this._onSubmitHandler = async (e: Event) => {
 			e.preventDefault();
 			this.config.onBeforeValidate?.(this);
@@ -358,7 +270,7 @@ export default class Form {
 
 			this.config.onAfterValidate?.(isValid, this);
 
-			if (isValid) submit();
+			if (isValid) this.submit();
 		};
 		this.$el.addEventListener('submit', this._onSubmitHandler as EventListener);
 	}
@@ -840,6 +752,12 @@ export default class Form {
 			this._onSubmitHandler = undefined;
 		}
 
+		// 1.1) Снять click-слушатель с кнопки submit
+		if (this._onSubmitClickHandler) {
+			this.$submit?.removeEventListener('click', this._onSubmitClickHandler as EventListener);
+			this._onSubmitClickHandler = undefined;
+		}
+
 		// 2) Удалить формовый error-блок под инпутами (если есть)
 		const formErrorWrapper = this.$el.querySelector('.error-block-under-input__wrapper') as HTMLElement | null;
 		if (formErrorWrapper) {
@@ -884,5 +802,107 @@ export default class Form {
 		}
 
 		return true;
+	}
+
+	private async sendData(): Promise<Response> {
+		const action = this.$el.getAttribute('action') || '';
+		const method = this.$el.getAttribute('method')?.toUpperCase() || 'POST';
+		const enctype = this.$el.getAttribute('enctype') || 'application/x-www-form-urlencoded';
+		let body: BodyInit | null = null;
+		let headers: HeadersInit = {};
+
+		// Сбор данных из формы
+		const formData = serializeToFormData(this.$el);
+		let data: Record<string, any> = {};
+		formData.forEach((value, key) => {
+			data[key] = value;
+		});
+
+		if (this.config.logging) {
+			for (const key of formData.keys()) console.log(formData.get(key));
+		}
+
+		// Применение обёртки, если указано в настройках
+		if (typeof this.config.wrapData === 'function') {
+			data = this.config.wrapData(data);
+		}
+
+		switch (enctype) {
+			case 'application/x-www-form-urlencoded':
+				body = new URLSearchParams(serializeToFormData(this.$el) as any).toString();
+				headers['Content-Type'] = 'application/x-www-form-urlencoded';
+				break;
+
+			case 'multipart/form-data':
+				body = serializeToFormData(this.$el);
+				// ВАЖНО: Не указываем Content-Type, т.к. браузер сам добавит с корректной границей!
+				break;
+
+			case 'text/plain':
+				body = Array.from(serializeToFormData(this.$el))
+					.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
+					.join('\n');
+				headers['Content-Type'] = 'text/plain';
+				break;
+
+			case 'application/json':
+				body = JSON.stringify(data);
+				headers['Content-Type'] = 'application/json';
+				break;
+
+			default:
+				console.warn(`Неизвестный enctype: ${enctype}. Используется application/x-www-form-urlencoded.`);
+				body = new URLSearchParams(serializeToFormData(this.$el) as any).toString();
+				headers['Content-Type'] = 'application/x-www-form-urlencoded';
+		}
+
+		return fetch(action, {
+			method,
+			body,
+			headers,
+		});
+	}
+
+	private async submit() {
+		if (!this.waitResponse) {
+			if (this.config.showLoaderButton === true) this.showLoader();
+
+			this.config.onSubmit?.(this);
+			this.waitResponse = true;
+
+			const response = await this.sendData();
+			const responseBody: ResponseBody = await response.json();
+			this.waitResponse = false;
+
+			if (this.config.showLoaderButton === true) this.hideLoader();
+			this.config.onResponse?.(responseBody, this);
+
+			if (response.status === 200) {
+				if (responseBody.success === true) {
+					this.config.onResponseSuccess?.(responseBody, this);
+				} else {
+					this.config.onResponseUnsuccess?.(responseBody, this);
+					if (responseBody.error === true) {
+						if (responseBody['error-msg']) {
+							this.showErrorForm(responseBody['error-msg']);
+						}
+						if (responseBody.errors) {
+							const inputsList: HTMLInputElement[] = [];
+							responseBody.errors.forEach(error => {
+								const $input = this.$el.querySelector(`input[name="${error.name}"]`) as HTMLInputElement;
+								if ($input) {
+									inputsList.push($input);
+									this.showError($input, error['error-msg']);
+								} else {
+									console.warn(`Не найдено поле с именем: ${error.name}, для вывода ошибки: ${error['error-msg']}`);
+								}
+							});
+							if (this.config.scrollToFirstErroredInput === true) this.scrollToFirstErroredInput(inputsList);
+						}
+					}
+				}
+				parseCommonResponseProperties(responseBody);
+			}
+		}
 	}
 }
