@@ -164,7 +164,6 @@ export default class Form {
 	private waitResponse: boolean = false;
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
 	private _onSubmitHandler?: (e: Event) => void;
-	private _onSubmitClickHandler?: (e: Event) => void;
 
 	private static get defaultParams(): Partial<FormOptions> {
 		return __shared.defaultParams;
@@ -210,13 +209,6 @@ export default class Form {
 
 		if (this.$el) {
 			this.$submit = this.$el.querySelector('input[type="submit"], button[type="submit"]');
-
-			this._onSubmitClickHandler = (e: Event) => {
-				e.preventDefault();
-				this.$el.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-			};
-			this.$submit?.addEventListener('click', this._onSubmitClickHandler as EventListener);
-
 			if (this.isCorrectArguments()) this.initialization();
 		} else {
 			console.warn('Empty $el');
@@ -846,12 +838,6 @@ export default class Form {
 		if (this._onSubmitHandler) {
 			this.$el.removeEventListener('submit', this._onSubmitHandler as EventListener);
 			this._onSubmitHandler = undefined;
-		}
-
-		// 1.1) Снять click-слушатель с кнопки submit
-		if (this._onSubmitClickHandler) {
-			this.$submit?.removeEventListener('click', this._onSubmitClickHandler as EventListener);
-			this._onSubmitClickHandler = undefined;
 		}
 
 		// 2) Удалить формовый error-блок под инпутами (если есть)
