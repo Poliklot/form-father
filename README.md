@@ -18,13 +18,31 @@ npm install form-father
 
 ## Использование
 
+```html
+	<form
+		novalidate
+		onsubmit="return false"
+		method="post"
+		action="/callback.php"
+		enctype="multipart/form-data"
+	>
+
+		<!-- inputs -->
+
+		<button type="submit">
+			Отправить
+		</button>
+	</form>
+```
+
 ```javascript
 import Form from 'form-father';
 
 Form.setDefaultParams({
 	showLoaderButton: false,
 	scrollToFirstErroredInput: false,
-	logging: true,
+	logging: false,
+	loaderColor: 'currentColor',
 });
 
 const formElement = document.querySelector('#myForm');
@@ -34,6 +52,7 @@ const options = {
 	},
 	onResponse: (responseBody, formInstance) => {
 		// Действия при получении ответа от сервера
+		formInstance.clearInputs();
 	},
 	// Другие опции...
 };
@@ -46,7 +65,7 @@ const form = new Form(formElement, options);
 Данная библиотека абстрагирует процесс парсинга HTTP-ответов и выполняет действия на их основе. Для её корректной работы
 сервер должен возвращать ответы в строго определённом формате. Полное описание формата (схемы) ответа от сервера
 представлено в данном техническом документе:
-[Спецификация формата ответов API.](https://gist.github.com/Poliklot/4916c87acf77c0a57c46c08ae2672299)
+[Спецификация формата ответов API.](https://github.com/Poliklot/form-father/blob/master/RESPONSE_API.md)
 
 ## Опции
 
@@ -65,6 +84,7 @@ const form = new Form(formElement, options);
 - **clearInputs()**: Очищает все поля ввода формы.
 - **setDefaultParams(params)**: Метод setDefaultParams используется для установки значений по умолчанию для всех
   экземпляров формы. Эти параметры можно переопределить при инициализации конкретной формы.
+- **destroy()**: Очищает инициализацию формы.
 
 ## Хелперы
 
