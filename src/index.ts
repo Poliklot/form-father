@@ -36,6 +36,10 @@ type ValidationSchema = Record<
 	}
 >;
 
+type SubmitElement = HTMLInputElement | HTMLButtonElement;
+
+let loaderIdCounter = 0;
+
 /** Параметры формы. */
 interface FormOptions {
 	/**
@@ -160,7 +164,7 @@ export default class Form {
 	public $el: HTMLFormElement;
 	private options: FormOptions;
 	private config: FormOptions;
-	private $submit: HTMLInputElement | HTMLButtonElement | null = null;
+	private $submits: SubmitElement[] = [];
 	private waitResponse: boolean = false;
 	private inputs: NodeListOf<HTMLInputElement | HTMLTextAreaElement> | null = null;
 	private _onSubmitHandler?: (e: Event) => void;
@@ -209,7 +213,7 @@ export default class Form {
 		this.config = Object.assign({}, defaultConfig, Form.defaultParams, options);
 
 		if (this.$el) {
-			this.$submit = this.$el.querySelector('input[type="submit"], button[type="submit"]');
+			this.$submits = this.findSubmitElements();
 
 			this._onSubmitClickHandler = async (e: Event) => {
 				e.preventDefault();
@@ -221,9 +225,12 @@ export default class Form {
 				}
 			};
 
-			this.$submit?.addEventListener('click', this._onSubmitClickHandler as EventListener);
-
-			if (this.isCorrectArguments()) this.initialization();
+			if (this.isCorrectArguments()) {
+				this.$submits.forEach($submit => {
+					$submit.addEventListener('click', this._onSubmitClickHandler as EventListener);
+				});
+				this.initialization();
+			}
 		} else {
 			console.warn('Empty $el');
 		}
@@ -242,6 +249,10 @@ export default class Form {
 	 */
 	public static setDefaultParams(params: Partial<FormOptions>) {
 		this.defaultParams = { ...this.defaultParams, ...params };
+	}
+
+	private findSubmitElements(): SubmitElement[] {
+		return Array.from(this.$el.querySelectorAll('input[type="submit"], button[type="submit"]')) as SubmitElement[];
 	}
 
 	private initialization() {
@@ -287,46 +298,53 @@ export default class Form {
 
 	/** Показывает лоадер */
 	private showLoader() {
-		// Создаем SVG элемент
-		const loaderSvg = `
-			<svg height="38" viewBox="0 0 38 38" width="38" xmlns="http://www.w3.org/2000/svg">
-				<defs>
-				<linearGradient id="form-father-loader" x1="8.042%" x2="65.682%" y1="0%" y2="23.865%">
-					<stop offset="0%" stop-color="${this.config.loaderColor}" stop-opacity="0"/>
-					<stop offset="63.146%" stop-color="${this.config.loaderColor}" stop-opacity=".631"/>
-					<stop offset="100%" stop-color="${this.config.loaderColor}"/>
-				</linearGradient>
-				</defs>
-				<g fill-rule="evenodd" fill="none">
-				<g transform="translate(1 1)">
-					<path d="M36 18c0-9.94-8.06-18-18-18" id="Oval-2" stroke-width="5" stroke="url(#form-father-loader)"></path>
-					<circle cx="36" cy="18" fill="${this.config.loaderColor}" r="1"></circle>
-				</g>
-				</g>
-			</svg>
-		`;
+		this.$submits.forEach($submit => {
+			$submit.classList.add('button--loading');
 
-		// Создаем элемент загрузчика и добавляем SVG внутрь
-		const $loaderEl = document.createElement('span');
-		$loaderEl.innerHTML = loaderSvg;
-		$loaderEl.className = 'button__loader';
-		this.$submit?.insertAdjacentElement('afterbegin', $loaderEl);
-		requestAnimationFrame(() => {
-			$loaderEl.setAttribute('data-showed', '');
+			if ($submit.querySelector('.button__loader')) return;
+
+			const gradientId = `form-father-loader-${loaderIdCounter++}`;
+			const loaderSvg = `
+				<svg height="38" viewBox="0 0 38 38" width="38" xmlns="http://www.w3.org/2000/svg">
+					<defs>
+					<linearGradient id="${gradientId}" x1="8.042%" x2="65.682%" y1="0%" y2="23.865%">
+						<stop offset="0%" stop-color="${this.config.loaderColor}" stop-opacity="0"/>
+						<stop offset="63.146%" stop-color="${this.config.loaderColor}" stop-opacity=".631"/>
+						<stop offset="100%" stop-color="${this.config.loaderColor}"/>
+					</linearGradient>
+					</defs>
+					<g fill-rule="evenodd" fill="none">
+					<g transform="translate(1 1)">
+						<path d="M36 18c0-9.94-8.06-18-18-18" id="Oval-2" stroke-width="5" stroke="url(#${gradientId})"></path>
+						<circle cx="36" cy="18" fill="${this.config.loaderColor}" r="1"></circle>
+					</g>
+					</g>
+				</svg>
+			`;
+
+			const $loaderEl = document.createElement('span');
+			$loaderEl.innerHTML = loaderSvg;
+			$loaderEl.className = 'button__loader';
+			$submit.insertAdjacentElement('afterbegin', $loaderEl);
+			requestAnimationFrame(() => {
+				$loaderEl.setAttribute('data-showed', '');
+			});
 		});
 	}
 
 	/** Скрывает лоадер */
 	private hideLoader() {
-		this.$submit?.classList.remove('button--loading');
-		const $loader = this.$submit?.querySelector('.button__loader') as HTMLElement;
-		if ($loader) {
-			$loader.classList.remove('active');
-			$loader.removeAttribute('data-showed');
-			setTimeout(() => {
-				$loader.remove();
-			}, 250);
-		}
+		this.$submits.forEach($submit => {
+			$submit.classList.remove('button--loading');
+			const $loader = $submit.querySelector('.button__loader') as HTMLElement | null;
+			if ($loader) {
+				$loader.classList.remove('active');
+				$loader.removeAttribute('data-showed');
+				setTimeout(() => {
+					$loader.remove();
+				}, 250);
+			}
+		});
 	}
 
 	/**
@@ -527,12 +545,16 @@ export default class Form {
 
 	/** Блокирует кнопку отправки данных. */
 	private disableSubmit() {
-		this.$submit?.setAttribute('disabled', '');
+		this.$submits.forEach($submit => {
+			$submit.setAttribute('disabled', '');
+		});
 	}
 
 	/** Снимает блокировку с кнопки отправки данных. */
 	private enableSubmit() {
-		this.$submit?.removeAttribute('disabled');
+		this.$submits.forEach($submit => {
+			$submit.removeAttribute('disabled');
+		});
 	}
 
 	/** Очищает поля ввода формы. */
@@ -754,7 +776,9 @@ export default class Form {
 
 		// 1.1) Снять click-слушатель с кнопки submit
 		if (this._onSubmitClickHandler) {
-			this.$submit?.removeEventListener('click', this._onSubmitClickHandler as EventListener);
+			this.$submits.forEach($submit => {
+				$submit.removeEventListener('click', this._onSubmitClickHandler as EventListener);
+			});
 			this._onSubmitClickHandler = undefined;
 		}
 
@@ -766,9 +790,11 @@ export default class Form {
 		}
 
 		// 3) Скрыть/удалить лоадер на кнопке submit
-		this.$submit?.classList.remove('button--loading');
-		const btnLoader = this.$submit?.querySelector('.button__loader') as HTMLElement | null;
-		if (btnLoader) btnLoader.remove();
+		this.$submits.forEach($submit => {
+			$submit.classList.remove('button--loading');
+			const btnLoader = $submit.querySelector('.button__loader') as HTMLElement | null;
+			if (btnLoader) btnLoader.remove();
+		});
 
 		// 4) Сбросить ошибки у инпутов (если разметка позволяет)
 		const inputs = this.$el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea');
@@ -781,7 +807,7 @@ export default class Form {
 
 		// 6) Очистить ссылки на элементы, чтобы помочь GC
 		this.inputs = null;
-		this.$submit = null;
+		this.$submits = [];
 		this.waitResponse = false;
 	}
 
@@ -796,7 +822,7 @@ export default class Form {
 			return false;
 		}
 
-		if (!this.$submit) {
+		if (this.$submits.length === 0) {
 			console.warn(`В форме нет кнопки с типом submit`);
 			return false;
 		}
