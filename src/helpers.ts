@@ -76,6 +76,54 @@ export function isEmailValid(value: string): boolean {
 	);
 }
 
+const HTTP_PROTOCOLS = ['http:', 'https:'];
+
+function getNormalizedUrlString(originalUrlString: string): string {
+	const trimmedUrl = originalUrlString.trim();
+	if (trimmedUrl.length === 0) return '';
+
+	if (trimmedUrl.startsWith('//')) {
+		return `https:${trimmedUrl}`;
+	}
+
+	return /^[a-z][a-z\d+.-]*:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
+}
+
+function isValidIpv4(hostname: string): boolean {
+	const parts = hostname.split('.');
+	if (parts.length !== 4) return false;
+
+	return parts.every(part => {
+		if (!/^\d{1,3}$/.test(part)) return false;
+		const num = Number(part);
+		return num >= 0 && num <= 255;
+	});
+}
+
+function isValidIpv6(hostname: string): boolean {
+	if (!hostname.startsWith('[') || !hostname.endsWith(']')) return false;
+
+	const normalizedHostname = hostname.slice(1, -1);
+	return normalizedHostname.includes(':') && /^[\da-f:.]+$/i.test(normalizedHostname);
+}
+
+function isValidDomainLabel(label: string): boolean {
+	return label.length > 0 && label.length <= 63 && /^[a-z\d-]+$/i.test(label) && !label.startsWith('-') && !label.endsWith('-');
+}
+
+function isValidDomainHostname(hostname: string): boolean {
+	const labels = hostname.split('.');
+	return labels.length >= 2 && labels.every(isValidDomainLabel);
+}
+
+function isAllowedHostname(hostname: string): boolean {
+	if (!hostname) return false;
+
+	return (
+		hostname === 'localhost' || isValidIpv4(hostname) || isValidIpv6(hostname) || isValidDomainHostname(hostname)
+	);
+}
+
 /**
  * Проверяет является ли строка валидным url.
  *
@@ -84,12 +132,13 @@ export function isEmailValid(value: string): boolean {
  * @returns {boolean} Является ли строка валидным url адресом true/false.
  */
 export function isUrlValid(originalUrlString: string): boolean {
-	const urlString = /^https?:\/\//i.test(originalUrlString) ? originalUrlString : `http://${originalUrlString}`;
+	const urlString = getNormalizedUrlString(originalUrlString);
+	if (urlString.length === 0) return false;
 
 	try {
-		new URL(urlString);
-		return true;
-	} catch (e) {
+		const url = new URL(urlString);
+		return HTTP_PROTOCOLS.includes(url.protocol) && isAllowedHostname(url.hostname);
+	} catch {
 		return false;
 	}
 }

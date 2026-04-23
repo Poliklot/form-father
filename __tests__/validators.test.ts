@@ -13,7 +13,13 @@ describe('builtin validators', () => {
 		{ rule: 'email', value: 'foo@bar.com', expected: true },
 		{ rule: 'email', value: 'foo@bar', expected: false },
 		{ rule: 'url', value: 'https://example.com', expected: true },
+		{ rule: 'url', value: 'example.com', expected: true },
+		{ rule: 'url', value: 'мойсайт.рф', expected: true },
+		{ rule: 'url', value: '1.1.1.1', expected: true },
+		{ rule: 'url', value: 'localhost', expected: true },
 		{ rule: 'url', value: 'example', expected: false },
+		{ rule: 'url', value: '"мойсайт.рф', expected: false },
+		{ rule: 'url', value: 'exa_mple.com', expected: false },
 		{ rule: 'not-numbers', value: 'abc', expected: true },
 		{ rule: 'not-numbers', value: 'a1c', expected: false },
 	];

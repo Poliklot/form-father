@@ -1,3 +1,5 @@
+import { isUrlValid } from './helpers';
+
 /* ---------- types ---------- */
 export type ValidatorEffectCtx = {
 	value: string;
@@ -77,6 +79,6 @@ registerValidator('email', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Неве�
 
 registerValidator('tel', v => /^\+7\d{10}$/.test(v), 'Неверный формат');
 
-registerValidator('url', v => /^(https?:\/\/).+\..+/.test(v), 'Неверный формат');
+registerValidator('url', v => isUrlValid(v), 'Неверный формат');
 
 registerValidator('not-numbers', v => !/[0-9]/.test(v), 'Неверный формат');

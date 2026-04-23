@@ -64,7 +64,7 @@ The library provides a number of utility functions:
 
 - **serializeToFormData($element)**: Serializes form data into a `FormData` object.
 - **isEmailValid(value)**: Checks if a string is a valid email address.
-- **isUrlValid(value)**: Checks if a string is a valid URL.
+- **isUrlValid(value)**: Checks an `http(s)` URL, domain, IP, or `localhost`; the scheme may be omitted.
 - **isPhoneValid(value)**: Checks if a string is a valid phone number.
 - **closest($el, selector)**: Finds the closest parent element matching the given selector.
 - **blockScrollBody()**: Blocks page scrolling.

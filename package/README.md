@@ -62,7 +62,7 @@ const form = new Form(formElement, options);
 
 - **serializeToFormData($element)**: Сериализует данные формы в объект `FormData`.
 - **isEmailValid(value)**: Проверяет, является ли строка валидным адресом электронной почты.
-- **isUrlValid(value)**: Проверяет, является ли строка валидным URL.
+- **isUrlValid(value)**: Проверяет `http(s)`-адрес, домен, IP, `localhost`, схема может быть опущена.
 - **isPhoneValid(value)**: Проверяет, является ли строка валидным номером телефона.
 - **closest($el, selector)**: Находит ближайший родительский элемент по заданному селектору.
 - **blockScrollBody()**: Блокирует прокрутку страницы.
