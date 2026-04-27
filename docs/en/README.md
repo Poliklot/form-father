@@ -60,6 +60,7 @@ import Form, {
 	type FormValidator,
 	type ValidationIssue,
 	type FormValidatorPredicate,
+	type ErrorSummaryOptions,
 } from 'form-father';
 ```
 
@@ -85,6 +86,9 @@ import Form, {
   `data-error-container`.
 - **validationStateAttribute**: Field state attribute: `validating`, `valid`, or `invalid`. Defaults to
   `data-form-father-state`.
+- **ariaDescribeErrors**: Links inline error text to the field with `aria-describedby`. Defaults to `true`.
+- **errorIdPrefix**: Prefix for automatically generated error element ids. Defaults to `form-father-error`.
+- **errorSummary**: Form error summary: `true` for the default renderer or `{ selector, title, focus, render }`.
 - **observeMutations**: Watches dynamically added fields and submit buttons.
 - **formValidators**: A form validator or array of validators for cross-field rules.
 
@@ -135,7 +139,37 @@ import Form, {
 - `data-error-container` points to a custom error container without requiring wrapper markup.
 - During async validation, fields receive `aria-busy="true"` and a `validating` state attribute; stale validator
   responses are ignored.
+- Inline errors receive `role="alert"` and are linked to fields with `aria-describedby`.
 - `data-custom-validate` is still supported for backward compatibility.
+
+### Error summary and a11y
+
+```html
+<form data-form-father novalidate>
+	<div data-form-father-summary hidden></div>
+	<label>
+		Email
+		<input class="input" name="email" data-validate="required|email" />
+	</label>
+	<button type="submit">Submit</button>
+</form>
+```
+
+```ts
+new Form($form, {
+	inputWrapperSelector: 'label',
+	errorSummary: {
+		title: 'Please check the form',
+		focus: true,
+	},
+});
+```
+
+- If the form already contains `[data-form-father-summary]`, Form Father uses it; otherwise `errorSummary: true` creates
+  a summary at the start of the form.
+- `selector` sends the summary into your own container.
+- `render(errors, form)` lets you fully replace the summary markup.
+- `ariaDescribeErrors: false` disables automatic error id insertion into `aria-describedby`.
 
 Final rule order:
 

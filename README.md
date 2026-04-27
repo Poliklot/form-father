@@ -79,6 +79,7 @@ import Form, {
 	type FormValidator,
 	type ValidationIssue,
 	type FormValidatorPredicate,
+	type ErrorSummaryOptions,
 } from 'form-father';
 ```
 
@@ -110,6 +111,9 @@ import Form, {
 - **errorContainerAttribute**: Атрибут с CSS-селектором контейнера ошибки. По умолчанию `data-error-container`.
 - **validationStateAttribute**: Атрибут состояния поля: `validating`, `valid`, `invalid`. По умолчанию
   `data-form-father-state`.
+- **ariaDescribeErrors**: Связывать inline-ошибку с полем через `aria-describedby`. По умолчанию `true`.
+- **errorIdPrefix**: Префикс id для автоматически созданных элементов ошибок. По умолчанию `form-father-error`.
+- **errorSummary**: Summary ошибок формы: `true` для дефолтного блока или объект `{ selector, title, focus, render }`.
 - **observeMutations**: Следить за динамически добавленными полями и submit-кнопками.
 - **formValidators**: Валидатор или массив валидаторов всей формы для cross-field правил.
 
@@ -248,7 +252,37 @@ _Порядок применения для одного `<input>`:_
 - `data-error-container` указывает контейнер для ошибки без обязательной wrapper-разметки.
 - Во время async-валидации поле получает `aria-busy="true"` и state-атрибут `validating`; устаревшие ответы
   валидаторов игнорируются.
+- Inline-ошибки автоматически получают `role="alert"` и связываются с полем через `aria-describedby`.
 - `data-custom-validate` сохранён для обратной совместимости.
+
+### Error summary и a11y
+
+```html
+<form data-form-father novalidate>
+	<div data-form-father-summary hidden></div>
+	<label>
+		Email
+		<input class="input" name="email" data-validate="required|email" />
+	</label>
+	<button type="submit">Отправить</button>
+</form>
+```
+
+```ts
+new Form($form, {
+	inputWrapperSelector: 'label',
+	errorSummary: {
+		title: 'Проверьте форму',
+		focus: true,
+	},
+});
+```
+
+- Если в форме уже есть `[data-form-father-summary]`, библиотека использует его; иначе при `errorSummary: true` создаёт
+  блок в начале формы.
+- `selector` позволяет отдать summary в свой контейнер.
+- `render(errors, form)` позволяет полностью заменить разметку summary.
+- `ariaDescribeErrors: false` отключает автоматическое добавление id ошибки в `aria-describedby`.
 
 ### Правило через `data-custom-validate`
 

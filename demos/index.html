@@ -22,6 +22,8 @@
 					<h2>Live validation</h2>
 				</div>
 				<form data-form-father action="/demo/login" method="post" enctype="application/json" data-demo="login" novalidate>
+					<div data-form-father-summary hidden></div>
+
 					<label class="field">
 						<span>Email</span>
 						<input
@@ -73,6 +75,8 @@
 					<h2>Server field errors</h2>
 				</div>
 				<form data-form-father action="/demo/callback" method="post" data-demo="callback" novalidate>
+					<div data-form-father-summary hidden></div>
+
 					<label class="field">
 						<span>Имя</span>
 						<input class="input" name="name" data-validate="required" data-error-required="Укажите имя" />
@@ -100,6 +104,8 @@
 					<h2>GET query</h2>
 				</div>
 				<form data-form-father action="/demo/search?source=demos" method="get" data-demo="search" novalidate>
+					<div data-form-father-summary hidden></div>
+
 					<label class="field">
 						<span>Запрос</span>
 						<input class="input" name="q" value="form father" data-validate="required" />
@@ -124,6 +130,8 @@
 					<h2>FormData upload</h2>
 				</div>
 				<form data-form-father action="/demo/upload" method="post" enctype="multipart/form-data" data-demo="upload" novalidate>
+					<div data-form-father-summary hidden></div>
+
 					<label class="field">
 						<span>Название</span>
 						<input class="input" name="title" data-validate="required" />

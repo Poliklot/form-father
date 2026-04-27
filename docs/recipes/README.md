@@ -122,3 +122,29 @@ adding runtime dependencies to Form Father.
 ```
 
 Field errors are shown through the same rendering path as client-side validation errors.
+
+## Accessible error summary
+
+```html
+<form data-form-father novalidate>
+	<div data-form-father-summary hidden></div>
+	<label>
+		Email
+		<input class="input" name="email" data-validate="required|email" />
+	</label>
+	<button type="submit">Submit</button>
+</form>
+```
+
+```ts
+const form = new Form(document.querySelector('form')!, {
+	inputWrapperSelector: 'label',
+	errorSummary: {
+		title: 'Please check the form',
+		focus: true,
+	},
+});
+```
+
+Inline errors are linked to fields with `aria-describedby` by default. Use `ariaDescribeErrors: false` if your design
+system owns that relationship itself.

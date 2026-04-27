@@ -65,6 +65,20 @@ export interface FormResetOptions {
 	clearErrors?: boolean;
 }
 
+export interface ErrorSummaryOptions {
+	/** Existing summary container selector. If omitted, Form Father creates `[data-form-father-summary]` in the form. */
+	selector?: string;
+
+	/** Heading text for the default summary renderer. */
+	title?: string;
+
+	/** Move focus to the summary after rendering. Useful for submit-time screen reader announcements. */
+	focus?: boolean;
+
+	/** Custom renderer. Return an element/string or render into your own container and return nothing. */
+	render?: (errors: ValidationError[], formInstance: Form) => HTMLElement | string | void;
+}
+
 export interface ValidationIssue {
 	field?: string;
 	rule?: string;
@@ -196,7 +210,11 @@ type SubmitElement = HTMLInputElement | HTMLButtonElement;
 export type FormFieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 let loaderIdCounter = 0;
+let errorIdCounter = 0;
 const FORM_INSTANCES = new WeakMap<HTMLFormElement, Form>();
+const ERROR_DESCRIBEDBY_ID_ATTRIBUTE = 'data-form-father-describedby-id';
+const ADDED_DESCRIBEDBY_ID_ATTRIBUTE = 'data-form-father-added-describedby-id';
+const ERROR_SUMMARY_ATTRIBUTE = 'data-form-father-summary';
 
 /** Параметры формы. */
 export interface FormOptions {
@@ -314,6 +332,15 @@ export interface FormOptions {
 
 	/** Атрибут, куда пишется состояние поля: `validating`, `valid` или `invalid`. */
 	validationStateAttribute?: string;
+
+	/** Связывать текст ошибки с полем через `aria-describedby`. По умолчанию `true`. */
+	ariaDescribeErrors?: boolean;
+
+	/** Префикс id для автоматически созданных элементов ошибок. */
+	errorIdPrefix?: string;
+
+	/** Error summary для всей формы. По умолчанию выключен; `true` включает дефолтный renderer. */
+	errorSummary?: boolean | ErrorSummaryOptions;
 
 	/** Следить за динамически добавленными/удалёнными полями и submit-кнопками. По умолчанию `false`. */
 	observeMutations?: boolean;
@@ -433,6 +460,9 @@ export default class Form {
 			validationDebounce: 0,
 			errorContainerAttribute: 'data-error-container',
 			validationStateAttribute: 'data-form-father-state',
+			ariaDescribeErrors: true,
+			errorIdPrefix: 'form-father-error',
+			errorSummary: false,
 			observeMutations: false,
 		};
 
@@ -545,6 +575,7 @@ export default class Form {
 			this.clearFieldValidationState($field);
 		});
 		this.hideErrorForm();
+		this.hideErrorSummary();
 		return this;
 	}
 
@@ -623,6 +654,7 @@ export default class Form {
 		this.normalizeValidationIssues(issues, source).forEach(issue => {
 			this.applyValidationIssue(issue, source);
 		});
+		this.syncErrorSummary();
 		return this;
 	}
 
@@ -822,6 +854,61 @@ export default class Form {
 		}
 	}
 
+	private toSafeIdPart(value: string): string {
+		return (
+			value
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9_-]+/gi, '-')
+				.replace(/^-+|-+$/g, '') || 'field'
+		);
+	}
+
+	private createErrorId($input: FormFieldElement): string {
+		const prefix = this.config.errorIdPrefix || 'form-father-error';
+		return `${this.toSafeIdPart(prefix)}-${this.toSafeIdPart(this.getFieldKey($input))}-${++errorIdCounter}`;
+	}
+
+	private ensureElementId($input: FormFieldElement, $error: HTMLElement): string {
+		if (!$error.id) {
+			$error.id = $input.getAttribute(ERROR_DESCRIBEDBY_ID_ATTRIBUTE) || this.createErrorId($input);
+		}
+		return $error.id;
+	}
+
+	private addErrorDescription($input: FormFieldElement, $error: HTMLElement): void {
+		if (!$error.hasAttribute('role')) $error.setAttribute('role', 'alert');
+
+		const errorId = this.ensureElementId($input, $error);
+		$input.setAttribute(ERROR_DESCRIBEDBY_ID_ATTRIBUTE, errorId);
+
+		if (this.config.ariaDescribeErrors === false) return;
+
+		const currentIds = ($input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+		if (!currentIds.includes(errorId)) {
+			$input.setAttribute('aria-describedby', [...currentIds, errorId].join(' '));
+			$input.setAttribute(ADDED_DESCRIBEDBY_ID_ATTRIBUTE, errorId);
+		}
+	}
+
+	private removeErrorDescription($input: FormFieldElement): void {
+		const addedId = $input.getAttribute(ADDED_DESCRIBEDBY_ID_ATTRIBUTE);
+		if (addedId) {
+			const nextIds = ($input.getAttribute('aria-describedby') || '')
+				.split(/\s+/)
+				.filter(id => id && id !== addedId);
+
+			if (nextIds.length > 0) {
+				$input.setAttribute('aria-describedby', nextIds.join(' '));
+			} else {
+				$input.removeAttribute('aria-describedby');
+			}
+		}
+
+		$input.removeAttribute(ERROR_DESCRIBEDBY_ID_ATTRIBUTE);
+		$input.removeAttribute(ADDED_DESCRIBEDBY_ID_ATTRIBUTE);
+	}
+
 	/**
 	 * Показывает ошибку для поля ввода.
 	 *
@@ -834,7 +921,7 @@ export default class Form {
 		const $errorContainer = this.getErrorContainer($input);
 		if ($errorContainer) {
 			$errorContainer.textContent = text;
-			if (!$errorContainer.hasAttribute('role')) $errorContainer.setAttribute('role', 'alert');
+			this.addErrorDescription($input, $errorContainer);
 			$errorContainer.removeAttribute('hidden');
 			return;
 		}
@@ -848,6 +935,8 @@ export default class Form {
 		const customShowError = ($inputWrapper as any).showError;
 		if (typeof customShowError === 'function') {
 			customShowError.call($inputWrapper, text);
+			const $customError = $inputWrapper.querySelector('[data-form-father-error]') as HTMLElement | null;
+			if ($customError) this.addErrorDescription($input, $customError);
 			return;
 		}
 
@@ -861,6 +950,7 @@ export default class Form {
 			$input.insertAdjacentElement('afterend', $error);
 		}
 		$error.textContent = text;
+		this.addErrorDescription($input, $error);
 	}
 
 	/** Показывает лоадер */
@@ -924,6 +1014,7 @@ export default class Form {
 		const $errorContainer = this.getErrorContainer($input);
 
 		$input.removeAttribute('aria-invalid');
+		this.removeErrorDescription($input);
 		if ($errorContainer) {
 			$errorContainer.textContent = '';
 			$errorContainer.setAttribute('hidden', '');
@@ -939,6 +1030,137 @@ export default class Form {
 				// const { $inputErrorIcon, $inputErrorBadge } = this.initErrorElements($inputWrapper, dataTypeError);
 			}
 		}
+	}
+
+	private getErrorSummaryOptions(): ErrorSummaryOptions | null {
+		if (!this.config.errorSummary) return null;
+		return this.config.errorSummary === true ? {} : this.config.errorSummary;
+	}
+
+	private getErrorSummaryContainer(options: ErrorSummaryOptions, create: boolean): HTMLElement | null {
+		if (options.selector) {
+			try {
+				return (
+					(this.$el.querySelector(options.selector) as HTMLElement | null) ||
+					(document.querySelector(options.selector) as HTMLElement | null)
+				);
+			} catch {
+				console.warn(`[FormFather] Invalid error summary selector "${options.selector}"`);
+				return null;
+			}
+		}
+
+		const existing = this.$el.querySelector(`[${ERROR_SUMMARY_ATTRIBUTE}]`) as HTMLElement | null;
+		if (existing || !create) return existing;
+
+		const $summary = document.createElement('div');
+		$summary.setAttribute(ERROR_SUMMARY_ATTRIBUTE, '');
+		this.$el.insertAdjacentElement('afterbegin', $summary);
+		return $summary;
+	}
+
+	private prepareErrorSummaryContainer($summary: HTMLElement): void {
+		$summary.setAttribute(ERROR_SUMMARY_ATTRIBUTE, '');
+		if (!$summary.hasAttribute('role')) $summary.setAttribute('role', 'alert');
+		if (!$summary.hasAttribute('tabindex')) $summary.setAttribute('tabindex', '-1');
+		$summary.removeAttribute('hidden');
+	}
+
+	private focusErrorSummary($summary: HTMLElement): void {
+		try {
+			$summary.focus({ preventScroll: true });
+		} catch {
+			$summary.focus();
+		}
+	}
+
+	private focusFieldFromSummary($field: FormFieldElement): void {
+		if (typeof $field.scrollIntoView === 'function') {
+			$field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+
+		try {
+			$field.focus({ preventScroll: true });
+		} catch {
+			$field.focus();
+		}
+	}
+
+	private renderDefaultErrorSummary($summary: HTMLElement, errors: ValidationError[], options: ErrorSummaryOptions): void {
+		$summary.textContent = '';
+
+		const $title = document.createElement('p');
+		$title.setAttribute('data-form-father-summary-title', '');
+		$title.textContent = options.title || 'Проверьте поля формы';
+
+		const $list = document.createElement('ul');
+		$list.setAttribute('data-form-father-summary-list', '');
+
+		errors.forEach(error => {
+			const $item = document.createElement('li');
+			const $field = error.field === FORM_ERROR_FIELD ? null : this.findFieldByName(error.field);
+
+			if ($field) {
+				const $button = document.createElement('button');
+				$button.type = 'button';
+				$button.setAttribute('data-form-father-summary-field', error.field);
+				$button.textContent = error.message;
+				$button.addEventListener('click', () => this.focusFieldFromSummary($field));
+				$item.appendChild($button);
+			} else {
+				const $message = document.createElement('span');
+				$message.textContent = error.message;
+				$item.appendChild($message);
+			}
+
+			$list.appendChild($item);
+		});
+
+		$summary.append($title, $list);
+	}
+
+	private renderErrorSummary(errors: ValidationError[] = this.getErrors()): void {
+		const options = this.getErrorSummaryOptions();
+		if (!options) return;
+
+		if (errors.length === 0) {
+			this.hideErrorSummary();
+			return;
+		}
+
+		const $summary = this.getErrorSummaryContainer(options, true);
+		if (!$summary) return;
+
+		this.prepareErrorSummaryContainer($summary);
+
+		const rendered = options.render?.(errors.map(error => ({ ...error })), this);
+		if (rendered instanceof HTMLElement) {
+			$summary.replaceChildren(rendered);
+		} else if (typeof rendered === 'string') {
+			$summary.innerHTML = rendered;
+		} else if (!options.render) {
+			this.renderDefaultErrorSummary($summary, errors, options);
+		}
+
+		if (options.focus) this.focusErrorSummary($summary);
+	}
+
+	private hideErrorSummary(): void {
+		const options = this.getErrorSummaryOptions() || {};
+		const $summary = this.getErrorSummaryContainer(options, false);
+		if (!$summary) return;
+
+		$summary.replaceChildren();
+		$summary.setAttribute('hidden', '');
+	}
+
+	private syncErrorSummary(): void {
+		if (this.errors.length === 0) {
+			this.hideErrorSummary();
+			return;
+		}
+
+		this.renderErrorSummary();
 	}
 
 	/**
@@ -1332,6 +1554,7 @@ export default class Form {
 		this.showError($field, message);
 		$field.removeAttribute('aria-busy');
 		this.setFieldValidationState($field, 'invalid');
+		this.syncErrorSummary();
 		return true;
 	}
 
@@ -1344,7 +1567,9 @@ export default class Form {
 		}
 
 		const { rules, messages } = this.getFieldValidationConfig($field);
-		return this.runFieldValidation($field, rules, messages);
+		const isValid = await this.runFieldValidation($field, rules, messages);
+		this.syncErrorSummary();
+		return isValid;
 	}
 
 	/**
@@ -1398,6 +1623,12 @@ export default class Form {
 		}
 		if (!ok && this.config.focusFirstErroredInput) {
 			this.focusFirstErroredInput(visibleErroredInputs);
+		}
+
+		if (ok) {
+			this.hideErrorSummary();
+		} else {
+			this.renderErrorSummary();
 		}
 
 		return ok;
@@ -1656,6 +1887,7 @@ export default class Form {
 			this._cancelAnimations(formErrorWrapper);
 			formErrorWrapper.remove();
 		}
+		this.hideErrorSummary();
 
 		// 3) Скрыть/удалить лоадер на кнопке submit
 		this.$submits.forEach($submit => {
@@ -1806,6 +2038,7 @@ export default class Form {
 		if (responseBody.error !== true) return;
 
 		if (responseBody['error-msg']) {
+			this.setErrorRecord(FORM_ERROR_FIELD, 'server', responseBody['error-msg'], 'server');
 			this.showErrorForm(responseBody['error-msg']);
 		}
 
@@ -1820,12 +2053,15 @@ export default class Form {
 					$field.removeAttribute('aria-busy');
 					this.setFieldValidationState($field, 'invalid');
 				} else {
+					this.setErrorRecord(error.name, 'server', error['error-msg'], 'server');
 					console.warn(`Не найдено поле с именем: ${error.name}, для вывода ошибки: ${error['error-msg']}`);
 				}
 			});
 			if (this.config.scrollToFirstErroredInput === true) this.scrollToFirstErroredInput(fieldsList);
 			if (this.config.focusFirstErroredInput === true) this.focusFirstErroredInput(fieldsList);
 		}
+
+		this.syncErrorSummary();
 	}
 
 	private async sendData(): Promise<Response> {

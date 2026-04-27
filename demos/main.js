@@ -76,6 +76,10 @@ Form.initAll('form[data-form-father]', {
 	validationDebounce: 120,
 	focusFirstErroredInput: true,
 	loaderColor: 'currentColor',
+	errorSummary: {
+		title: 'Проверьте поля формы',
+		focus: true,
+	},
 	formValidators: sameAsField('passwordConfirm', 'password', 'Пароли не совпадают'),
 	onValidationError(errors) {
 		writeOutput('Client validation errors', errors);

@@ -116,6 +116,46 @@ form {
 	gap: 14px;
 }
 
+[data-form-father-summary]:not([hidden]) {
+	display: grid;
+	gap: 8px;
+	padding: 12px;
+	border: 1px solid rgba(179, 38, 30, 0.28);
+	border-radius: 6px;
+	background: rgba(179, 38, 30, 0.06);
+	color: var(--danger);
+	font-size: 14px;
+}
+
+[data-form-father-summary-title] {
+	margin: 0;
+	font-weight: 700;
+}
+
+[data-form-father-summary-list] {
+	display: grid;
+	gap: 4px;
+	margin: 0;
+	padding-left: 18px;
+}
+
+[data-form-father-summary] button {
+	min-height: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font-weight: 700;
+	text-align: left;
+	text-decoration: underline;
+}
+
+[data-form-father-summary] button:hover,
+[data-form-father-summary] button:focus-visible {
+	background: transparent;
+	color: var(--accent-strong);
+}
+
 .field {
 	display: grid;
 	gap: 6px;

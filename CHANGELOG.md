@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here.
 
+## 0.6.0 - 2026-04-27
+
+### Added
+
+- Added accessible field error wiring via `aria-describedby` with safe preservation of existing descriptions.
+- Added `errorSummary` option with default rendering, custom selector support, focus control, and custom renderers.
+- Added `ariaDescribeErrors` and `errorIdPrefix` options for UI/a11y integration control.
+
+### Changed
+
+- Field, form-level, backend, and manual errors can now share one visible summary while keeping the existing inline error
+  rendering path.
+- Demo forms now include accessible error summaries.
+
+### Tests
+
+- Test suite expanded to 122 tests.
+- Coverage baseline: 98.30% statements, 86.88% branches, 97.25% functions, 100% lines.
+
 ## 0.5.0 - 2026-04-27
 
 ### Added
