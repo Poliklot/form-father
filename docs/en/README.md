@@ -226,9 +226,12 @@ For simple checks, use `createFieldValidator(predicate, message)`.
 
 ## Demos and Recipes
 
-- `demos/index.html` is a static login/callback/search/upload demo after `npm run build`.
+- `demos/index.html` is a static login/callback/search/upload/public API demo after `npm run build`.
 - `npm run demos` builds the package and starts the Vite demo server.
+- `docs/api/README.md` is a compact reference for public API, options, methods, and exports.
+- `docs/demo/README.md` explains manual demo checks and demo form coverage.
 - `docs/recipes/README.md` contains short API, data-attribute, adapter, and server-error recipes.
+- `CHANGELOG.md` tracks releases and coverage baselines.
 
 ## Helpers
 
@@ -250,6 +253,7 @@ The library provides a number of utility functions:
 
 - **npm run build**: Builds the project.
 - **npm run watch**: Builds the project in watch mode.
+- **npm run docs:check**: Checks docs links, version references, demo files, and package README sync.
 - **npm run demos**: Runs a demo version using Vite.
 
 ## Contributing

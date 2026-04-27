@@ -102,6 +102,10 @@ button:focus-visible {
 	padding: 22px;
 }
 
+.demo-panel--wide {
+	grid-column: 1 / -1;
+}
+
 .panel-title {
 	margin-bottom: 18px;
 }
@@ -154,6 +158,17 @@ form {
 [data-form-father-summary] button:focus-visible {
 	background: transparent;
 	color: var(--accent-strong);
+}
+
+.demo-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.demo-actions button {
+	min-height: 38px;
+	padding-inline: 12px;
 }
 
 .field {

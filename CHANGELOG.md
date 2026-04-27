@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here.
 
+## 0.7.0 - 2026-04-27
+
+### Added
+
+- Added `docs/api/README.md` with a compact public API, options, methods, validators, adapters, and helpers reference.
+- Added `docs/demo/README.md` with manual demo scenarios and demo coverage notes.
+- Added a Public API demo panel covering `setValues()`, `validateField()`, `setErrors()`, `getValues()`, and
+  `clearErrors()`.
+- Added `npm run docs:check` to verify documentation files, version references, package README sync, and demo coverage.
+
+### Changed
+
+- `npm run release:check` now includes documentation checks before build and package smoke checks.
+- Package smoke checks now verify the broader public export surface and package documentation files.
+
+### Tests
+
+- Release gate remains at 122 tests plus docs/package smoke checks.
+
 ## 0.6.0 - 2026-04-27
 
 ### Added

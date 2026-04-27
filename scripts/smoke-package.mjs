@@ -12,6 +12,12 @@ const requiredFiles = [
 	'README.md',
 	'LICENSE',
 	'RESPONSE_API.md',
+	'CHANGELOG.md',
+	'docs/api/README.md',
+	'docs/demo/README.md',
+	'docs/en/README.md',
+	'docs/recipes/README.md',
+	'demos/index.html',
 ];
 
 const missingFiles = requiredFiles.filter(filePath => !fs.existsSync(path.join(rootDir, filePath)));
@@ -26,16 +32,29 @@ if (!packageJson.exports?.['.']?.import || !packageJson.exports?.['.']?.types) {
 const entrypoint = await import(pathToFileURL(path.join(rootDir, packageJson.exports['.'].import)).href);
 const requiredExports = [
 	'default',
+	'FORM_ERROR_FIELD',
+	'createFormValidator',
+	'sameAsField',
+	'requiredIf',
+	'dateOrder',
 	'registerValidator',
+	'registerFieldValidator',
+	'registerSchemaValidator',
 	'getValidator',
 	'getAllValidators',
+	'createFieldValidator',
+	'createSchemaValidator',
+	'createPatternValidator',
+	'createLengthValidator',
 	'serializeToFormData',
+	'serializeFormToJSON',
 	'isEmailValid',
 	'isUrlValid',
 	'isPhoneValid',
 	'closest',
 	'parseCommonResponseProperties',
-	'serializeFormToJSON',
+	'blockScrollBody',
+	'unblockScrollBody',
 ];
 
 const missingExports = requiredExports.filter(exportName => !(exportName in entrypoint));

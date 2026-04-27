@@ -1,6 +1,6 @@
 const api = window.FormFather || {};
 const Form = api.default || api.Form || api;
-const { createLengthValidator, registerValidator, sameAsField } = api;
+const { FORM_ERROR_FIELD, createLengthValidator, registerValidator, sameAsField } = api;
 const output = document.querySelector('#demo-output');
 
 function writeOutput(title, payload) {
@@ -54,6 +54,14 @@ window.fetch = async (url, options = {}) => {
 		});
 	}
 
+	if (requestUrl.startsWith('/demo/api')) {
+		return json({
+			success: true,
+			message: 'Programmatic API form accepted',
+			method,
+		});
+	}
+
 	return json({ success: false, error: true, 'error-msg': `No demo route for ${requestUrl}` }, 404);
 };
 
@@ -68,7 +76,7 @@ registerValidator(
 	{ override: true },
 );
 
-Form.initAll('form[data-form-father]', {
+const forms = Form.initAll('form[data-form-father]', {
 	inputSelector: '.input',
 	inputWrapperSelector: '.field',
 	validateOn: ['blur', 'change'],
@@ -92,4 +100,50 @@ Form.initAll('form[data-form-father]', {
 			form.clearInputs();
 		}
 	},
+});
+
+const formByDemo = new Map(forms.map(form => [form.$el.dataset.demo, form]));
+const apiForm = formByDemo.get('api');
+
+document.querySelectorAll('[data-api-action]').forEach(button => {
+	button.addEventListener('click', async () => {
+		if (!apiForm) return;
+
+		switch (button.dataset.apiAction) {
+			case 'fill':
+				apiForm.setValues({
+					name: 'Ada Lovelace',
+					email: 'ada@example.com',
+					plan: 'team',
+				});
+				writeOutput('setValues()', apiForm.getValues());
+				break;
+
+			case 'validate-email': {
+				const valid = await apiForm.validateField('email');
+				writeOutput('validateField("email")', {
+					valid,
+					errors: apiForm.getErrors(),
+				});
+				break;
+			}
+
+			case 'server-errors':
+				apiForm.setErrors({
+					email: 'Этот email уже зарегистрирован',
+					[FORM_ERROR_FIELD]: 'Сервер попросил проверить форму',
+				});
+				writeOutput('setErrors()', apiForm.getErrors());
+				break;
+
+			case 'values':
+				writeOutput('getValues()', apiForm.getValues());
+				break;
+
+			case 'clear':
+				apiForm.clearErrors();
+				writeOutput('clearErrors()', apiForm.getErrors());
+				break;
+		}
+	});
 });

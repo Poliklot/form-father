@@ -145,6 +145,43 @@
 					<button type="submit">Отправить</button>
 				</form>
 			</section>
+
+			<section class="demo-panel demo-panel--wide">
+				<div class="panel-title">
+					<p class="eyebrow">Public API</p>
+					<h2>Programmatic control</h2>
+				</div>
+				<form data-form-father action="/demo/api" method="post" data-demo="api" novalidate>
+					<div data-form-father-summary hidden></div>
+
+					<label class="field">
+						<span>Имя</span>
+						<input class="input" name="name" data-validate="required" data-error-required="Укажите имя" />
+					</label>
+
+					<label class="field">
+						<span>Email</span>
+						<input class="input" name="email" type="email" data-validate="required|email" />
+					</label>
+
+					<label class="field">
+						<span>Тариф</span>
+						<select class="input" name="plan">
+							<option value="starter">Starter</option>
+							<option value="team">Team</option>
+							<option value="enterprise">Enterprise</option>
+						</select>
+					</label>
+
+					<div class="demo-actions" aria-label="Public API actions">
+						<button type="button" data-api-action="fill">setValues()</button>
+						<button type="button" data-api-action="validate-email">validateField()</button>
+						<button type="button" data-api-action="server-errors">setErrors()</button>
+						<button type="button" data-api-action="values">getValues()</button>
+						<button type="button" data-api-action="clear">clearErrors()</button>
+					</div>
+				</form>
+			</section>
 		</main>
 
 		<section class="demo-output">
