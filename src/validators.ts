@@ -3,10 +3,12 @@ import { isUrlValid } from './helpers';
 /* ---------- types ---------- */
 export type ValidatorEffectCtx = {
 	value: string;
-	$input: HTMLInputElement | HTMLTextAreaElement;
+	$input: ValidatorFieldElement;
 	$form: HTMLElement;
 	params?: any;
 };
+
+export type ValidatorFieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 export type ValidatorResult = {
 	valid: boolean;
@@ -18,12 +20,12 @@ export type ValidatorResult = {
 	stopOthers?: boolean;
 };
 
-type ValidatorFn = (
+export type ValidatorFn = (
 	value: string,
-	$input: HTMLInputElement | HTMLTextAreaElement,
+	$input: ValidatorFieldElement,
 	$form: HTMLElement,
 	params?: any,
-) => boolean | Promise<boolean> | ValidatorResult | Promise<ValidatorResult>;
+) => boolean | ValidatorResult | Promise<boolean | ValidatorResult>;
 
 interface Validator {
 	fn: ValidatorFn;
@@ -56,7 +58,13 @@ export function getAllValidators(): Map<string, Validator> {
 }
 
 /* ---------- built-in rules ---------- */
-registerValidator(
+function registerBuiltinValidator(name: string, fn: ValidatorFn, defaultMessage: string): void {
+	if (!validators.has(name)) {
+		validators.set(name, { fn, defaultMessage });
+	}
+}
+
+registerBuiltinValidator(
 	'required',
 	(value, $input, $form) => {
 		if ($input && $input.type) {
@@ -75,10 +83,10 @@ registerValidator(
 	'Пустое значение',
 );
 
-registerValidator('email', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Неверный формат');
+registerBuiltinValidator('email', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Неверный формат');
 
-registerValidator('tel', v => /^\+7\d{10}$/.test(v), 'Неверный формат');
+registerBuiltinValidator('tel', v => /^\+7\d{10}$/.test(v), 'Неверный формат');
 
-registerValidator('url', v => isUrlValid(v), 'Неверный формат');
+registerBuiltinValidator('url', v => isUrlValid(v), 'Неверный формат');
 
-registerValidator('not-numbers', v => !/[0-9]/.test(v), 'Неверный формат');
+registerBuiltinValidator('not-numbers', v => !/[0-9]/.test(v), 'Неверный формат');

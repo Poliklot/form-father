@@ -23,6 +23,7 @@ export default [
 				file: 'dist/FormFather.min.js',
 				format: 'iife',
 				name: 'FormFather',
+				exports: 'named',
 				sourcemap: true,
 				plugins: [terser()],
 			},

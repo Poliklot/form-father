@@ -43,6 +43,35 @@ describe('Form.validate()', () => {
 		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Пустое значение');
 	});
 
+	test('showError использует безопасный fallback, если у обёртки нет showError()', async () => {
+		const formEl = buildForm(`
+            <form id="f">
+                <div class="input__wrapper">
+                    <input name="name" type="text" class="input" required/>
+                </div>
+                <button type="submit"></button>
+            </form>
+        `);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.input__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+		const input = formEl.querySelector<HTMLInputElement>('input[name="name"]')!;
+		const wrapper = formEl.querySelector<HTMLElement>('.input__wrapper')!;
+
+		expect(await (form as any).validate()).toBe(false);
+		expect(input.getAttribute('aria-invalid')).toBe('true');
+		expect(wrapper.classList.contains('input__wrapper--error')).toBe(true);
+		expect(wrapper.querySelector('[data-form-father-error]')?.textContent).toBe('Пустое значение');
+
+		input.value = 'Ivan';
+		expect(await (form as any).validate()).toBe(true);
+		expect(input.hasAttribute('aria-invalid')).toBe(false);
+		expect(wrapper.querySelector('[data-form-father-error]')).toBeNull();
+	});
+
 	test('Поле email required не заполнено', async () => {
 		const formEl = buildForm(`
             <form id="f">
@@ -200,6 +229,33 @@ describe('Form.validate()', () => {
 		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Номер должен начинаться на +79277');
 	});
 
+	test('Параметры кастомного валидатора передаются через data-custom-validate', async () => {
+		registerValidator('only-digits', (v, _input, _form, len) => new RegExp(`^\\d{${len}}$`).test(v), 'Неверный код', {
+			override: true,
+		});
+
+		const formEl = buildForm(`
+            <form id="f">
+                <div class="input__wrapper">
+                    <input name="code" type="text" value="123" data-custom-validate="only-digits:4" class="input" />
+                </div>
+                <button type="submit"></button>
+            </form>
+        `);
+
+		const form = new Form(formEl, {
+			inputSelector: '.input',
+			inputWrapperSelector: '.input__wrapper',
+			scrollToFirstErroredInput: false,
+		});
+
+		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
+		const result = await (form as any).validate();
+
+		expect(result).toBe(false);
+		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Неверный код');
+	});
+
 	test('Переопределен валидатор без override', async () => {
 		const formEl = buildForm(`
             <form id="f">
@@ -216,7 +272,7 @@ describe('Form.validate()', () => {
 			scrollToFirstErroredInput: false,
 		});
 
-		const mockWarn = jest.spyOn(console, 'warn');
+		const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
 		registerValidator('tel', v => /^8\d{10}$/.test(v), 'Неверный формат (test)');
 		expect(mockWarn).toHaveBeenCalledWith(
@@ -294,7 +350,7 @@ describe('Form.validate()', () => {
 		});
 
 		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
-		const mockWarn = jest.spyOn(console, 'warn');
+		const mockWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
 		await (form as any).validate();
 		expect(spy).toHaveBeenCalledTimes(1);
@@ -318,12 +374,16 @@ describe('Form.validate()', () => {
 		});
 
 		const spy = jest.spyOn(form as any, 'showError').mockImplementation(() => {});
-		const mockLog = jest.spyOn(console, 'log');
+		jest.spyOn(console, 'warn').mockImplementation(() => {});
+		const mockLog = jest.spyOn(console, 'log').mockImplementation(() => {});
 		const all = getAllValidators();
 		console.log(JSON.stringify([...all.keys()]));
 		await (form as any).validate();
 
-		expect(mockLog).toHaveBeenCalledWith('["required","email","tel","url","not-numbers","begin+79277"]');
+		const loggedValidators = JSON.parse(mockLog.mock.calls[0][0]);
+		expect(loggedValidators).toEqual(
+			expect.arrayContaining(['required', 'email', 'tel', 'url', 'not-numbers', 'begin+79277']),
+		);
 	});
 
 	test('Required checkbox не выборан', async () => {
@@ -371,8 +431,7 @@ describe('Form.validate()', () => {
 		expect(spy).not.toHaveBeenCalled();
 	});
 
-	/* TODO: Должна быть 1 ошибка на группу - доработать. */
-	test('Required radio не выбран — вызывает ошибку', async () => {
+	test('Required radio не выбран — вызывает одну ошибку на группу', async () => {
 		const formEl = buildForm(`
 			<form id="f">
 				<div class="radio__wrapper">
@@ -393,7 +452,7 @@ describe('Form.validate()', () => {
 		const result = await (form as any).validate();
 
 		expect(result).toBe(false);
-		expect(spy).toHaveBeenCalledTimes(2);
+		expect(spy).toHaveBeenCalledTimes(1);
 		expect(spy).toHaveBeenCalledWith(expect.any(HTMLInputElement), 'Пустое значение');
 	});
 

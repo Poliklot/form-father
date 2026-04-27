@@ -14,6 +14,14 @@ const config: Config = {
 
 	modulePathIgnorePatterns: ['<rootDir>/package/'],
 	testPathIgnorePatterns: ['<rootDir>/package/'],
+	coverageThreshold: {
+		global: {
+			statements: 98,
+			branches: 86,
+			functions: 93,
+			lines: 100,
+		},
+	},
 };
 
 export default config;

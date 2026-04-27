@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Form Father demos</title>
+		<link rel="stylesheet" href="./styles.css" />
+	</head>
+	<body>
+		<header class="demo-header">
+			<div>
+				<p class="eyebrow">Form Father</p>
+				<h1>Демо форм, валидации и ответов сервера</h1>
+			</div>
+			<a class="github-link" href="https://github.com/Poliklot/form-father">GitHub</a>
+		</header>
+
+		<main class="demo-grid">
+			<section class="demo-panel">
+				<div class="panel-title">
+					<p class="eyebrow">Login</p>
+					<h2>Live validation</h2>
+				</div>
+				<form data-form-father action="/demo/login" method="post" enctype="application/json" data-demo="login" novalidate>
+					<label class="field">
+						<span>Email</span>
+						<input
+							class="input"
+							name="email"
+							type="email"
+							autocomplete="email"
+							data-validate="required|email|available-email"
+							data-error-required="Email обязателен"
+							data-error-email="Введите корректный email"
+							data-error-available-email="Этот email уже занят"
+							data-error-container="#login-email-error"
+						/>
+						<small id="login-email-error" class="field-error" hidden></small>
+					</label>
+
+					<label class="field">
+						<span>Password</span>
+						<input
+							class="input"
+							name="password"
+							type="password"
+							autocomplete="current-password"
+							data-validate="required|min-length:6"
+							data-error-required="Пароль обязателен"
+							data-error-min-length="Минимум 6 символов"
+						/>
+					</label>
+
+					<label class="field">
+						<span>Repeat password</span>
+						<input
+							class="input"
+							name="passwordConfirm"
+							type="password"
+							autocomplete="current-password"
+							data-validate="required"
+							data-error-required="Повторите пароль"
+						/>
+					</label>
+
+					<button type="submit">Войти</button>
+				</form>
+			</section>
+
+			<section class="demo-panel">
+				<div class="panel-title">
+					<p class="eyebrow">Callback</p>
+					<h2>Server field errors</h2>
+				</div>
+				<form data-form-father action="/demo/callback" method="post" data-demo="callback" novalidate>
+					<label class="field">
+						<span>Имя</span>
+						<input class="input" name="name" data-validate="required" data-error-required="Укажите имя" />
+					</label>
+
+					<label class="field">
+						<span>Телефон</span>
+						<input
+							class="input"
+							name="tel"
+							type="tel"
+							placeholder="+79991234567"
+							data-validate="required|tel"
+							data-error-tel="Телефон в формате +7XXXXXXXXXX"
+						/>
+					</label>
+
+					<button type="submit">Заказать звонок</button>
+				</form>
+			</section>
+
+			<section class="demo-panel">
+				<div class="panel-title">
+					<p class="eyebrow">Search</p>
+					<h2>GET query</h2>
+				</div>
+				<form data-form-father action="/demo/search?source=demos" method="get" data-demo="search" novalidate>
+					<label class="field">
+						<span>Запрос</span>
+						<input class="input" name="q" value="form father" data-validate="required" />
+					</label>
+
+					<label class="field">
+						<span>Раздел</span>
+						<select class="input" name="section">
+							<option value="docs">Docs</option>
+							<option value="api">API</option>
+							<option value="examples">Examples</option>
+						</select>
+					</label>
+
+					<button type="submit">Найти</button>
+				</form>
+			</section>
+
+			<section class="demo-panel">
+				<div class="panel-title">
+					<p class="eyebrow">Multipart</p>
+					<h2>FormData upload</h2>
+				</div>
+				<form data-form-father action="/demo/upload" method="post" enctype="multipart/form-data" data-demo="upload" novalidate>
+					<label class="field">
+						<span>Название</span>
+						<input class="input" name="title" data-validate="required" />
+					</label>
+
+					<label class="field">
+						<span>Файл</span>
+						<input class="input" name="attachment" type="file" />
+					</label>
+
+					<button type="submit">Отправить</button>
+				</form>
+			</section>
+		</main>
+
+		<section class="demo-output">
+			<div class="panel-title">
+				<p class="eyebrow">Output</p>
+				<h2>Последний ответ</h2>
+			</div>
+			<pre id="demo-output">Заполните любую форму.</pre>
+		</section>
+
+		<script src="../dist/FormFather.min.js"></script>
+		<script src="./main.js"></script>
+	</body>
+</html>

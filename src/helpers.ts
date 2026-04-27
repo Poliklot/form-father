@@ -188,13 +188,17 @@ export function serializeToFormData($element: HTMLElement): FormData {
 			return;
 		}
 
-		if (!element.name || element.hasAttribute('data-no-serialize')) {
+		if (!element.name || element.disabled || element.hasAttribute('data-no-serialize')) {
+			return;
+		}
+
+		if (element instanceof HTMLButtonElement) {
 			return;
 		}
 		const { name, type } = element;
 
 		if (type === 'file') {
-			if (element.getAttribute('multiple') === 'true') {
+			if ((element as HTMLInputElement).multiple) {
 				const files = (element as HTMLInputElement).files;
 				if (files) {
 					for (let i = 0; i < files.length; i++) {

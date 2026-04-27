@@ -1,8 +1,9 @@
 {
 	"name": "form-father",
-	"version": "0.2.8",
+	"version": "0.5.0",
 	"description": "Form Father: Библиотека для обработки форм",
 	"type": "module",
+	"files": ["dist", "README.md", "LICENSE", "RESPONSE_API.md", "CHANGELOG.md", "docs", "demos"],
 	"exports": {
 		".": {
 			"import": "./dist/index.js",
@@ -13,13 +14,17 @@
 		"build": "rollup -c",
 		"watch": "rollup -c -w",
 		"release": "node scripts/release.js",
+		"release:check": "npm test -- --runInBand --watchman=false && npm run build && npm run smoke:package && npm run pack:dry-run",
 		"test": "jest --coverage",
+		"prepublishOnly": "npm test -- --runInBand --watchman=false && npm run build",
+		"pack:dry-run": "npm_config_cache=/tmp/form-father-npm-cache npm pack --dry-run",
+		"smoke:package": "node scripts/smoke-package.mjs",
 		"versions:sync": "node scripts/sync-version.js",
 		"demos": "BUILD_TARGET=demos npm run build && concurrently --kill-others \"vite\" \"npm run watch\""
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/poliklot/form-father.git"
+		"url": "git+https://github.com/poliklot/form-father.git"
 	},
 	"keywords": [
 		"form",

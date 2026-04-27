@@ -11,6 +11,8 @@ import ora from 'ora';
 	// Пути к файлам package.json
 	const rootPackagePath = './package.json';
 	const packagePackagePath = './package/package.json';
+	const copiedItemsPath = './copiedItems.json';
+	let hasError = false;
 
 	try {
 		// Читаем package.json из корня и package/
@@ -79,7 +81,7 @@ import ora from 'ora';
 			console.log(chalk.yellow(` - ${item}`));
 		});
 		// Сохраняем список скопированных элементов в файл
-		fs.writeFileSync('./copiedItems.json', JSON.stringify(copiedItems, null, '\t'));
+		fs.writeFileSync(copiedItemsPath, JSON.stringify(copiedItems, null, '\t'));
 
 		// Запрос подтверждения на публикацию
 		const { publish } = await inquirer.prompt([
@@ -118,24 +120,33 @@ import ora from 'ora';
 
 		console.log(chalk.green('\nВыпуск успешно завершен!\n'));
 	} catch (error) {
+		hasError = true;
 		console.error(chalk.red('Произошла ошибка:'), error);
 	} finally {
 		spinner.start('Удаление временных файлов...');
-		const itemsToRemove = JSON.parse(fs.readFileSync('./copiedItems.json', 'utf-8'));
+		if (fs.existsSync(copiedItemsPath)) {
+			const itemsToRemove = JSON.parse(fs.readFileSync(copiedItemsPath, 'utf-8'));
 
-		itemsToRemove.forEach(item => {
-			if (fs.existsSync(item)) {
-				const stats = fs.statSync(item);
-				if (stats.isDirectory()) {
-					fs.rmSync(item, { recursive: true, force: true });
-				} else {
-					fs.unlinkSync(item);
+			itemsToRemove.forEach(item => {
+				if (fs.existsSync(item)) {
+					const stats = fs.statSync(item);
+					if (stats.isDirectory()) {
+						fs.rmSync(item, { recursive: true, force: true });
+					} else {
+						fs.unlinkSync(item);
+					}
 				}
-			}
-		});
-		// Удаляем файл с списком скопированных элементов
-		fs.unlinkSync('./copiedItems.json');
-		spinner.succeed('Удалены временные файлы!');
+			});
+			// Удаляем файл с списком скопированных элементов
+			fs.unlinkSync(copiedItemsPath);
+			spinner.succeed('Удалены временные файлы!');
+		} else {
+			spinner.succeed('Временные файлы не создавались.');
+		}
+	}
+
+	if (hasError) {
+		process.exit(1);
 	}
 
 	// Запрос подтверждения на создание коммита и пуш в ветку
@@ -155,5 +166,5 @@ import ora from 'ora';
 		spinner.succeed('Коммит отправлен в удаленный репозиторий!');
 	}
 
-	process.exit(1);
+	process.exit(0);
 })();

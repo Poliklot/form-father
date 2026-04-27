@@ -1,6 +1,6 @@
 {
 	"name": "form-father",
-	"version": "0.2.8",
+	"version": "0.5.0",
 	"description": "Form Father: Библиотека для обработки форм",
 	"type": "module",
 	"scripts": {
@@ -11,7 +11,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/poliklot/form-father.git"
+		"url": "git+https://github.com/poliklot/form-father.git"
 	},
 	"keywords": [
 		"form",

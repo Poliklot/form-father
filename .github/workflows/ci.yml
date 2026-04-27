@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  test-build-pack:
+    name: Test, build, and pack
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test -- --runInBand --watchman=false
+
+      - name: Build
+        run: npm run build
+
+      - name: Package smoke
+        run: npm run smoke:package
+
+      - name: Pack dry-run
+        run: npm run pack:dry-run
