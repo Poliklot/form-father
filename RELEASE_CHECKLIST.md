@@ -8,7 +8,7 @@ Use this checklist for every npm release.
 - Confirm the target version is not already published:
 
 ```bash
-npm view form-father@0.7.0 version
+npm view form-father@0.7.1 version
 ```
 
 - Run the full local release gate:
@@ -46,8 +46,8 @@ npm_config_cache=/tmp/form-father-npm-cache npm publish --otp <code>
 - Verify npm metadata:
 
 ```bash
-npm view form-father@0.7.0 version
-npm view form-father@0.7.0 dist.tarball
+npm view form-father@0.7.1 version
+npm view form-father@0.7.1 dist.tarball
 ```
 
 - Smoke install in a temporary folder:
@@ -56,13 +56,13 @@ npm view form-father@0.7.0 dist.tarball
 tmpdir="$(mktemp -d)"
 cd "$tmpdir"
 npm init -y
-npm install form-father@0.7.0
+npm install form-father@0.7.1
 node -e "import('form-father').then(m => console.log(typeof m.default, typeof m.isUrlValid))"
 ```
 
 - Create a git tag:
 
 ```bash
-git tag v0.7.0
-git push origin v0.7.0
+git tag v0.7.1
+git push origin v0.7.1
 ```

@@ -29,7 +29,32 @@ if (!packageJson.exports?.['.']?.import || !packageJson.exports?.['.']?.types) {
 	throw new Error('package.json exports must expose both import and types entries');
 }
 
+if (packageJson.main !== './dist/index.js') {
+	throw new Error('package.json main must point to dist/index.js');
+}
+
+if (packageJson.module !== './dist/index.js') {
+	throw new Error('package.json module must point to dist/index.js');
+}
+
+if (packageJson.types !== './dist/index.d.ts') {
+	throw new Error('package.json types must point to dist/index.d.ts');
+}
+
+if (packageJson.exports['.'].default !== './dist/index.js') {
+	throw new Error('package.json root export must include a default condition');
+}
+
+if (packageJson.exports['./FormFather.min.js'] !== './dist/FormFather.min.js') {
+	throw new Error('package.json must expose the IIFE bundle subpath');
+}
+
+if (packageJson.unpkg !== './dist/FormFather.min.js' || packageJson.jsdelivr !== './dist/FormFather.min.js') {
+	throw new Error('package.json CDN entries must point to the IIFE bundle');
+}
+
 const entrypoint = await import(pathToFileURL(path.join(rootDir, packageJson.exports['.'].import)).href);
+const packageEntrypoint = await import(packageJson.name);
 const requiredExports = [
 	'default',
 	'FORM_ERROR_FIELD',
@@ -64,6 +89,15 @@ if (missingExports.length > 0) {
 
 if (typeof entrypoint.default !== 'function') {
 	throw new Error('Default export must be the Form constructor');
+}
+
+const missingPackageExports = requiredExports.filter(exportName => !(exportName in packageEntrypoint));
+if (missingPackageExports.length > 0) {
+	throw new Error(`Missing package self-reference exports: ${missingPackageExports.join(', ')}`);
+}
+
+if (typeof packageEntrypoint.default !== 'function') {
+	throw new Error('Package self-reference default export must be the Form constructor');
 }
 
 console.log(`Package smoke passed for ${packageJson.name}@${packageJson.version}`);

@@ -1,8 +1,31 @@
 {
 	"name": "form-father",
-	"version": "0.7.0",
+	"version": "0.7.1",
 	"description": "Form Father: Библиотека для обработки форм",
 	"type": "module",
+	"main": "index.js",
+	"module": "index.js",
+	"types": "index.d.ts",
+	"exports": {
+		".": {
+			"types": "./index.d.ts",
+			"import": "./index.js",
+			"default": "./index.js"
+		},
+		"./FormFather.min.js": "./FormFather.min.js"
+	},
+	"unpkg": "./FormFather.min.js",
+	"jsdelivr": "./FormFather.min.js",
+	"files": [
+		"index.js",
+		"index.d.ts",
+		"FormFather.min.js",
+		"*.map",
+		"types",
+		"README.md",
+		"LICENSE",
+		"RESPONSE_API.md"
+	],
 	"scripts": {
 		"build": "rollup -c",
 		"watch": "rollup -c -w",

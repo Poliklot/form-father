@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## 0.7.1 - 2026-05-19
+
+### Fixed
+
+- Added explicit npm package entrypoints (`main`, `module`, `types`, `exports.default`, CDN fields) for compatibility with webpack and TypeScript consumers using classic Node module resolution.
+- Synchronized the flattened publish manifest in `package/package.json` with the root package metadata.
+
 ## 0.7.0 - 2026-04-27
 
 ### Added
