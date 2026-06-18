@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.2](https://github.com/Poliklot/form-father/compare/form-father-v0.8.1...form-father-v0.8.2) (2026-06-18)
+
+
+### Security
+
+* Override `js-yaml` to `4.2.0` to close the remaining Dependabot security alert.
+* Update vulnerable build dependencies, including `serialize-javascript`, `vite`, and `esbuild`.
+
+
+### Build
+
+* Update Rollup, Babel, PostCSS, and TypeScript build tooling.
+* Set explicit TypeScript `rootDir` and DOM/ES2019 library targets for stable declaration builds.
+
+
+### Tests
+
+* Configure Jest TypeScript globals for the TypeScript 6 test run.
+
 ## [0.8.1](https://github.com/Poliklot/form-father/compare/form-father-v0.8.0...form-father-v0.8.1) (2026-06-18)
 
 
