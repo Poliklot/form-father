@@ -1,0 +1,47 @@
+name: Publish form-father 0.2.x
+
+on:
+  push:
+    tags:
+      - 'form-father-v0.2.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish form-father legacy patch
+    runs-on: ubuntu-latest
+    environment: npm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify package metadata
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          if (pkg.name !== 'form-father') throw new Error(`Unexpected package name: ${pkg.name}`);
+          if (pkg.version !== '0.2.12') throw new Error(`Unexpected package version: ${pkg.version}`);
+          if (pkg.main !== './dist/index.js') throw new Error('Missing classic main entrypoint');
+          if (pkg.module !== './dist/index.js') throw new Error('Missing module entrypoint');
+          if (pkg.types !== './dist/index.d.ts') throw new Error('Missing types entrypoint');
+          if (pkg.exports?.['.']?.types !== './dist/index.d.ts') throw new Error('Missing export types entrypoint');
+          console.log(`Ready to publish ${pkg.name}@${pkg.version}`);
+          NODE
+
+      - name: Check package contents
+        run: npm pack --dry-run
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --tag legacy-0.2
