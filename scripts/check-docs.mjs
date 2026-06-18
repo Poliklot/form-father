@@ -44,7 +44,11 @@ const changelog = read('CHANGELOG.md');
 const demoHtml = read('demos/index.html');
 const demoJs = read('demos/main.js');
 
-assert(changelog.includes(`## ${version} - `), `CHANGELOG.md must include a ${version} release section`);
+const hasCurrentReleaseSection =
+	changelog.includes(`## ${version} - `) ||
+	changelog.includes(`## [${version}](`) ||
+	changelog.includes(`## [${version}] `);
+assert(hasCurrentReleaseSection, `CHANGELOG.md must include a ${version} release section`);
 
 ['docs/api/README.md', 'docs/demo/README.md', 'docs/recipes/README.md', 'CHANGELOG.md'].forEach(link => {
 	assert(rootReadme.includes(link), `README.md must link to ${link}`);
