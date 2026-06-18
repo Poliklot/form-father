@@ -1,26 +1,20 @@
 # Release Checklist
 
-Use this checklist for every npm release.
+Release automation is handled by Release Please and GitHub Actions Trusted Publishing.
 
 ## Before Release
 
-- Confirm `package.json` and `package/package.json` have the same version.
 - Confirm the target version is not already published:
 
 ```bash
-npm view form-father@0.7.1 version
+version="$(node -p "require('./package.json').version")"
+npm view "form-father@$version" version
 ```
 
-- Run the full local release gate:
+- Run the full release gate:
 
 ```bash
 npm run release:check
-```
-
-- Run the documentation/package metadata check directly if documentation changed:
-
-```bash
-npm run docs:check
 ```
 
 - Review the tarball contents from `npm run pack:dry-run`.
@@ -29,40 +23,39 @@ npm run docs:check
 
 ## Publish
 
-If npm cache permissions are broken locally, use the temporary cache prefix:
+Normal publish path:
 
-```bash
-npm_config_cache=/tmp/form-father-npm-cache npm publish
-```
+1. Merge the Release Please pull request.
+2. Open the `Release Please` workflow run.
+3. Approve the `npm` environment deployment when GitHub asks for review.
+4. The workflow publishes `form-father` with npm provenance through Trusted Publishing.
 
-If npm asks for 2FA:
+Trusted Publisher settings on npm:
 
-```bash
-npm_config_cache=/tmp/form-father-npm-cache npm publish --otp <code>
-```
+- Publisher: `GitHub Actions`
+- Organization or user: `Poliklot`
+- Repository: `form-father`
+- Workflow filename: `release-please.yml`
+- Environment name: `npm`
 
 ## After Publish
 
 - Verify npm metadata:
 
 ```bash
-npm view form-father@0.7.1 version
-npm view form-father@0.7.1 dist.tarball
+version="$(node -p "require('./package.json').version")"
+npm view "form-father@$version" version
+npm view "form-father@$version" dist.tarball
+npm view "form-father@$version" provenance
 ```
 
 - Smoke install in a temporary folder:
 
 ```bash
+version="$(node -p "require('./package.json').version")"
 tmpdir="$(mktemp -d)"
 cd "$tmpdir"
 npm init -y
-npm install form-father@0.7.1
+npm install "form-father@$version"
 node -e "import('form-father').then(m => console.log(typeof m.default, typeof m.isUrlValid))"
-```
-
-- Create a git tag:
-
-```bash
-git tag v0.7.1
-git push origin v0.7.1
 ```
