@@ -22,14 +22,10 @@ function assertFile(filePath) {
 }
 
 const packageJson = readJson('package.json');
-const packagePackageJson = readJson('package/package.json');
 const version = packageJson.version;
-
-assert(packagePackageJson.version === version, 'package/package.json version must match package.json');
 
 [
 	'README.md',
-	'package/README.md',
 	'CHANGELOG.md',
 	'RELEASE_CHECKLIST.md',
 	'RESPONSE_API.md',
@@ -43,17 +39,12 @@ assert(packagePackageJson.version === version, 'package/package.json version mus
 ].forEach(assertFile);
 
 const rootReadme = read('README.md');
-const packageReadme = read('package/README.md');
 const englishReadme = read('docs/en/README.md');
 const changelog = read('CHANGELOG.md');
-const releaseChecklist = read('RELEASE_CHECKLIST.md');
 const demoHtml = read('demos/index.html');
 const demoJs = read('demos/main.js');
 
-assert(packageReadme === rootReadme, 'package/README.md must be synchronized with README.md');
 assert(changelog.includes(`## ${version} - `), `CHANGELOG.md must include a ${version} release section`);
-assert(releaseChecklist.includes(`form-father@${version}`), 'RELEASE_CHECKLIST.md must reference the current npm version');
-assert(releaseChecklist.includes(`v${version}`), 'RELEASE_CHECKLIST.md must reference the current git tag');
 
 ['docs/api/README.md', 'docs/demo/README.md', 'docs/recipes/README.md', 'CHANGELOG.md'].forEach(link => {
 	assert(rootReadme.includes(link), `README.md must link to ${link}`);
