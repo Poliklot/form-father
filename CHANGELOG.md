@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.3](https://github.com/Poliklot/form-father/compare/form-father-v0.8.2...form-father-v0.8.3) (2026-06-22)
+
+
+### Bug Fixes
+
+* avoid unsafe error id regex trimming ([0c9dca8](https://github.com/Poliklot/form-father/commit/0c9dca873c5c7677baffc7381912fcef0fdd9f71))
+
 ## [0.8.2](https://github.com/Poliklot/form-father/compare/form-father-v0.8.1...form-father-v0.8.2) (2026-06-18)
 
 
