@@ -855,13 +855,19 @@ export default class Form {
 	}
 
 	private toSafeIdPart(value: string): string {
-		return (
-			value
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9_-]+/gi, '-')
-				.replace(/^-+|-+$/g, '') || 'field'
-		);
+		const normalized = value.trim().toLowerCase().replace(/[^a-z0-9_-]+/gi, '-');
+		let start = 0;
+		let end = normalized.length;
+
+		while (start < end && normalized[start] === '-') {
+			start += 1;
+		}
+
+		while (end > start && normalized[end - 1] === '-') {
+			end -= 1;
+		}
+
+		return normalized.slice(start, end) || 'field';
 	}
 
 	private createErrorId($input: FormFieldElement): string {

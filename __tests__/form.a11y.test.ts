@@ -58,6 +58,25 @@ describe('Form a11y error contract', () => {
 		expect(formEl.querySelector('[data-form-father-error]')).toBeNull();
 	});
 
+	test('generated error ids strip boundary hyphens without unsafe regex trimming', async () => {
+		const formEl = buildForm(`
+			<form id="f">
+				<div class="input__wrapper">
+					<input name="---" class="input" required />
+				</div>
+				<button type="submit"></button>
+			</form>
+		`);
+		const form = new Form(formEl, {
+			inputWrapperSelector: '.input__wrapper',
+			scrollToFirstErroredInput: false,
+			errorIdPrefix: '--- Error Prefix ---',
+		});
+
+		expect(await form.validate()).toBe(false);
+		expect(formEl.querySelector('[data-form-father-error]')?.id).toMatch(/^error-prefix-field-\d+$/);
+	});
+
 	test('custom error containers keep their own describedby wiring intact', async () => {
 		const formEl = buildForm(`
 			<form id="f">
