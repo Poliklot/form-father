@@ -21,6 +21,9 @@ updates:
       timezone: Europe/Moscow
     open-pull-requests-limit: 10
     ignore:
+      # Babel 8 requires @babel/core 8, while @rollup/plugin-babel 7 peers on Babel 7 only.
+      - dependency-name: '@babel/preset-env'
+        versions: ['8.x']
       # TypeScript 7 is blocked by the current rollup-plugin-dts and ts-jest peer ranges.
       - dependency-name: typescript
         versions: ['7.x']
