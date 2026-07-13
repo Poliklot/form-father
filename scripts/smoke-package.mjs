@@ -18,11 +18,23 @@ const requiredFiles = [
 	'docs/en/README.md',
 	'docs/recipes/README.md',
 	'demos/index.html',
+	'demos/main.js',
+	'demos/styles.css',
 ];
 
 const missingFiles = requiredFiles.filter(filePath => !fs.existsSync(path.join(rootDir, filePath)));
 if (missingFiles.length > 0) {
 	throw new Error(`Missing package files: ${missingFiles.join(', ')}`);
+}
+
+const expectedDemoPackageFiles = ['demos/index.html', 'demos/main.js', 'demos/styles.css'];
+const missingDemoPackageEntries = expectedDemoPackageFiles.filter(filePath => !packageJson.files?.includes(filePath));
+if (missingDemoPackageEntries.length > 0) {
+	throw new Error(`Missing explicit demo package entries: ${missingDemoPackageEntries.join(', ')}`);
+}
+
+if (packageJson.files.includes('demos')) {
+	throw new Error('package.json files must not include the whole demos directory');
 }
 
 if (!packageJson.exports?.['.']?.import || !packageJson.exports?.['.']?.types) {
