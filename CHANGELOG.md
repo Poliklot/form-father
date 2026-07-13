@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.6](https://github.com/Poliklot/form-father/compare/form-father-v0.8.5...form-father-v0.8.6) (2026-07-13)
+
+
+### Bug Fixes
+
+* **ci:** repair trusted npm publishing ([7bda032](https://github.com/Poliklot/form-father/commit/7bda032d9430fba23ef18820a0a1f01ca1c8425f))
+* **deps-dev:** bump vite to 8.1.4 ([33fdefd](https://github.com/Poliklot/form-father/commit/33fdefda0854de26a74ea95e8101ed07d3c53b5d))
+
 ## [0.8.5](https://github.com/Poliklot/form-father/compare/form-father-v0.8.4...form-father-v0.8.5) (2026-07-06)
 
 
