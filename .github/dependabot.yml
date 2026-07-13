@@ -20,6 +20,10 @@ updates:
       time: '06:15'
       timezone: Europe/Moscow
     open-pull-requests-limit: 10
+    ignore:
+      # TypeScript 7 is blocked by the current rollup-plugin-dts and ts-jest peer ranges.
+      - dependency-name: typescript
+        versions: ['7.x']
     groups:
       development-dependencies:
         dependency-type: development
