@@ -4,6 +4,15 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing release tag to publish. Leave empty to run Release Please.
+        required: false
+        type: string
+      version:
+        description: Expected package version for a manual publish.
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -14,6 +23,7 @@ permissions:
 jobs:
   release-please:
     name: Prepare release
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.tag_name == '' }}
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -28,13 +38,67 @@ jobs:
           manifest-file: .release-please-manifest.json
 
   publish-npm:
-    name: Publish npm package
+    name: Publish form-father
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
-    uses: ./.github/workflows/publish-npm.yml
+    if: >-
+      ${{
+        always() &&
+        (
+          needs.release-please.outputs.release_created == 'true' ||
+          (github.event_name == 'workflow_dispatch' && inputs.tag_name != '')
+        )
+      }}
+    runs-on: ubuntu-latest
+    environment: npm
     permissions:
       contents: read
       id-token: write
-    with:
-      tag_name: ${{ needs.release-please.outputs.tag_name }}
-      version: ${{ needs.release-please.outputs.version }}
+    env:
+      RELEASE_TAG: ${{ inputs.tag_name || needs.release-please.outputs.tag_name }}
+      RELEASE_VERSION: ${{ inputs.version || needs.release-please.outputs.version }}
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify package metadata
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const expectedVersion = process.env.RELEASE_VERSION || pkg.version;
+          const expectedTag = `form-father-v${expectedVersion}`;
+
+          if (pkg.name !== 'form-father') {
+            throw new Error(`Unexpected package name: ${pkg.name}`);
+          }
+
+          if (pkg.version !== expectedVersion) {
+            throw new Error(`package.json version ${pkg.version} does not match expected ${expectedVersion}`);
+          }
+
+          if (process.env.RELEASE_TAG !== expectedTag) {
+            throw new Error(`Release tag ${process.env.RELEASE_TAG} does not match expected ${expectedTag}`);
+          }
+
+          console.log(`Ready to publish ${pkg.name}@${pkg.version} from ${process.env.RELEASE_TAG}`);
+          NODE
+
+      - name: Run release gate
+        run: npm run release:check
+
+      - name: Publish to npm with provenance
+        run: npm publish --provenance

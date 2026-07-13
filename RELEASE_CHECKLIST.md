@@ -2,6 +2,8 @@
 
 Release automation is handled by Release Please and GitHub Actions Trusted Publishing.
 
+Use Node.js 24 LTS (`nvm use`) for local release checks. CI also verifies Node.js 22 and 26.
+
 ## Before Release
 
 - Confirm the target version is not already published:
@@ -30,6 +32,13 @@ Normal publish path:
 3. Approve the `npm` environment deployment when GitHub asks for review.
 4. The workflow publishes `form-father` with npm provenance through Trusted Publishing.
 
+Manual recovery path:
+
+1. Open the `Release Please` workflow and choose **Run workflow**.
+2. Enter the existing release tag in `tag_name` and the matching package version in `version`.
+3. Approve the `npm` environment deployment.
+4. Do not create a second publishing workflow: npm validates the top-level workflow filename configured below.
+
 Trusted Publisher settings on npm:
 
 - Publisher: `GitHub Actions`
@@ -46,7 +55,7 @@ Trusted Publisher settings on npm:
 version="$(node -p "require('./package.json').version")"
 npm view "form-father@$version" version
 npm view "form-father@$version" dist.tarball
-npm view "form-father@$version" provenance
+npm view "form-father@$version" dist.attestations
 ```
 
 - Smoke install in a temporary folder:

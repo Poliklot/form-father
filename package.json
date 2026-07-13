@@ -41,7 +41,14 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Poliklot/form-father"
+		"url": "git+https://github.com/Poliklot/form-father.git"
+	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": ">=22",
+			"onFail": "error"
+		}
 	},
 	"keywords": [
 		"form",
