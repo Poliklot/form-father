@@ -55,7 +55,7 @@ assert(hasCurrentReleaseSection, `CHANGELOG.md must include a ${version} release
 	assert(englishReadme.includes(link), `docs/en/README.md must link to ${link}`);
 });
 
-['docs', 'demos', 'CHANGELOG.md'].forEach(fileEntry => {
+['docs', 'demos/index.html', 'demos/main.js', 'demos/styles.css', 'CHANGELOG.md'].forEach(fileEntry => {
 	assert(packageJson.files?.includes(fileEntry), `package.json files must include ${fileEntry}`);
 });
 

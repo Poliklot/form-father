@@ -23,7 +23,9 @@
 		"RESPONSE_API.md",
 		"CHANGELOG.md",
 		"docs",
-		"demos"
+		"demos/index.html",
+		"demos/main.js",
+		"demos/styles.css"
 	],
 	"scripts": {
 		"build": "npm run build:js && npm run build:types",
