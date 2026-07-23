@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.8](https://github.com/Poliklot/form-father/compare/form-father-v0.8.7...form-father-v0.8.8) (2026-07-23)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump vite in the development-dependencies group ([#54](https://github.com/Poliklot/form-father/issues/54)) ([62ce348](https://github.com/Poliklot/form-father/commit/62ce3480ad02dddf9125adef6019cc1fa01a4341))
+* **deps:** bump actions/setup-node in the github-actions group ([#53](https://github.com/Poliklot/form-father/issues/53)) ([3f09d99](https://github.com/Poliklot/form-father/commit/3f09d99eaecc6f90aca49d5c4ed0534354f42ece))
+* **deps:** bump immutable from 5.1.6 to 5.1.9 ([#56](https://github.com/Poliklot/form-father/issues/56)) ([041cfbf](https://github.com/Poliklot/form-father/commit/041cfbf32848c64f16f0e7da7b4905b458bd0b05))
+
 ## [0.8.7](https://github.com/Poliklot/form-father/compare/form-father-v0.8.6...form-father-v0.8.7) (2026-07-13)
 
 
