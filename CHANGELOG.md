@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.10](https://github.com/Poliklot/form-father/compare/form-father-v0.8.9...form-father-v0.8.10) (2026-07-27)
+
+### Bug Fixes
+
+* update Rollup, ts-jest, and concurrently development tooling
+
 ## [0.8.9](https://github.com/Poliklot/form-father/compare/form-father-v0.8.8...form-father-v0.8.9) (2026-07-23)
 
 
