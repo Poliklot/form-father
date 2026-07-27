@@ -95,6 +95,7 @@
 	},
 	"overrides": {
 		"js-yaml": "4.3.0",
-		"minimatch": "10.2.6"
+		"minimatch": "10.2.6",
+		"test-exclude": "8.0.0"
 	}
 }
