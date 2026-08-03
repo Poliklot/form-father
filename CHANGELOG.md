@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.11](https://github.com/Poliklot/form-father/compare/form-father-v0.8.10...form-father-v0.8.11) (2026-08-03)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump jsdom from 29.1.1 to 30.0.1 ([bea5d35](https://github.com/Poliklot/form-father/commit/bea5d35c3ffbb91a40a92912048360aae7efae0f))
+* **deps-dev:** bump jsdom from 29.1.1 to 30.0.1 ([e60fbca](https://github.com/Poliklot/form-father/commit/e60fbca21253d18adc158eec691ba9c9941947a9))
+* **deps-dev:** bump vite from 8.1.5 to 8.2.0 in the development-dependencies group ([1fa39da](https://github.com/Poliklot/form-father/commit/1fa39da2353d3cc35c28e4309bccca9e1051eef2))
+* **deps-dev:** bump vite in the development-dependencies group ([84eb950](https://github.com/Poliklot/form-father/commit/84eb950922393b432919b3783eb4ec6ee8d4c5c1))
+
 ## [0.8.10](https://github.com/Poliklot/form-father/compare/form-father-v0.8.9...form-father-v0.8.10) (2026-07-27)
 
 ### Bug Fixes
