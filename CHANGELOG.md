@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.13](https://github.com/Poliklot/form-father/compare/form-father-v0.8.12...form-father-v0.8.13) (2026-08-17)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump sass-embedded from 1.100.0 to 1.102.0 in the development-dependencies group ([a5940a0](https://github.com/Poliklot/form-father/commit/a5940a0d967fba232c37618259ba0a77f8aff2e1))
+* **deps-dev:** bump sass-embedded in the development-dependencies group ([e23ba1e](https://github.com/Poliklot/form-father/commit/e23ba1eb8d0e670f433410ad5c786dad3a3e1d16))
+
 ## [0.8.12](https://github.com/Poliklot/form-father/compare/form-father-v0.8.11...form-father-v0.8.12) (2026-08-11)
 
 
