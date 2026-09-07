@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.15](https://github.com/Poliklot/form-father/compare/form-father-v0.8.14...form-father-v0.8.15) (2026-09-07)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump the development-dependencies group with 3 updates ([#74](https://github.com/Poliklot/form-father/issues/74)) ([4e124a8](https://github.com/Poliklot/form-father/commit/4e124a8e1697716728224f24113d1dced96edf2d))
+
 ## [0.8.14](https://github.com/Poliklot/form-father/compare/form-father-v0.8.13...form-father-v0.8.14) (2026-08-26)
 
 
