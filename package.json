@@ -80,21 +80,21 @@
 		"jest": "^30.5.1",
 		"jest-environment-jsdom": "^30.5.1",
 		"jsdom": "^30.0.1",
-		"postcss-preset-env": "^11.5.2",
+		"postcss-preset-env": "^11.5.3",
 		"prettier-plugin-jsdoc": "^1.8.1",
-		"rollup": "^4.63.1",
+		"rollup": "^4.63.2",
 		"rollup-plugin-copy": "^3.5.0",
 		"rollup-plugin-delete": "^3.0.2",
 		"rollup-plugin-dts": "^6.5.1",
 		"rollup-plugin-esbuild": "^6.2.1",
-		"sass-embedded": "^1.104.0",
+		"sass-embedded": "^1.104.1",
 		"ts-jest": "^29.4.12",
 		"ts-node": "^10.9.2",
 		"typescript": "^6.0.3",
-		"vite": "^8.2.2"
+		"vite": "^8.3.0"
 	},
 	"overrides": {
-		"js-yaml": "4.3.1",
+		"js-yaml": "4.3.2",
 		"minimatch": "10.2.6",
 		"test-exclude": "8.0.0"
 	}
