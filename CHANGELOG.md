@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.17](https://github.com/Poliklot/form-father/compare/form-father-v0.8.16...form-father-v0.8.17) (2026-09-30)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump the development-dependencies group across 1 directory with 7 updates ([#81](https://github.com/Poliklot/form-father/issues/81)) ([0fd5dab](https://github.com/Poliklot/form-father/commit/0fd5dab495aeba324f964b0127be9bf70c2efa00))
+* **deps-dev:** устранены уязвимости и обновлены зависимости ([#85](https://github.com/Poliklot/form-father/issues/85)) ([7d63420](https://github.com/Poliklot/form-father/commit/7d63420e9541c61f0bed6c4eac1c1dfa84c46a35))
+* **deps:** bump undici from 8.10.0 to 8.11.2 ([#82](https://github.com/Poliklot/form-father/issues/82)) ([8f25491](https://github.com/Poliklot/form-father/commit/8f254916ef3f0ffc5e5bd861733bc7b8f2872bf4))
+
 ## [0.8.16](https://github.com/Poliklot/form-father/compare/form-father-v0.8.15...form-father-v0.8.16) (2026-09-14)
 
 
