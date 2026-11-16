@@ -95,7 +95,19 @@
 	},
 	"overrides": {
 		"js-yaml": "4.3.2",
-		"minimatch": "10.2.6",
-		"test-exclude": "8.0.0"
+		"@jest/reporters": {
+			"glob": "14.0.2"
+		},
+		"jest-config": {
+			"glob": "14.0.2"
+		},
+		"jest-runtime": {
+			"glob": "14.0.2"
+		},
+		"test-exclude": {
+			".": "8.0.0",
+			"glob": "14.0.2",
+			"minimatch": "11.0.8"
+		}
 	}
 }
