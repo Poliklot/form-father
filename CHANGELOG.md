@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## [0.8.18](https://github.com/Poliklot/form-father/compare/form-father-v0.8.17...form-father-v0.8.18) (2026-11-23)
+
+
+### Bug Fixes
+
+* **deps-dev:** bump handlebars from 4.7.9 to 4.7.10 ([#89](https://github.com/Poliklot/form-father/issues/89)) ([f7ce7e1](https://github.com/Poliklot/form-father/commit/f7ce7e1c1bfca4ac1b8cccad9e98990c6871eade))
+* **deps-dev:** bump jsdom from 30.1.1 to 31.0.1 ([#100](https://github.com/Poliklot/form-father/issues/100)) ([3828c87](https://github.com/Poliklot/form-father/commit/3828c872d2590924ce3e87bbcce52322fa1814bc))
+* **deps-dev:** bump the development-dependencies group across 1 directory with 8 updates ([#95](https://github.com/Poliklot/form-father/issues/95)) ([e2f08ab](https://github.com/Poliklot/form-father/commit/e2f08ab4cdb202ab79202cbb4167d6d723d701a1))
+* **deps-dev:** bump the development-dependencies group with 2 updates ([#99](https://github.com/Poliklot/form-father/issues/99)) ([963934f](https://github.com/Poliklot/form-father/commit/963934ff13e5539b96720d83613a0069c0601c23))
+* **deps-dev:** обновлены зависимости сборки и тестов ([#98](https://github.com/Poliklot/form-father/issues/98)) ([fb0547d](https://github.com/Poliklot/form-father/commit/fb0547d290bb48a25a3286cb7a9f9600eb41361e))
+* **deps:** bump shell-quote and concurrently ([#88](https://github.com/Poliklot/form-father/issues/88)) ([150a432](https://github.com/Poliklot/form-father/commit/150a432da53f597fa9689449330e42387a53e327))
+* **deps:** bump undici from 8.11.2 to 8.12.3 ([#93](https://github.com/Poliklot/form-father/issues/93)) ([d858e0b](https://github.com/Poliklot/form-father/commit/d858e0b454c261fde95760ffa5a9346e1c2e4a9a))
+
 ## [0.8.17](https://github.com/Poliklot/form-father/compare/form-father-v0.8.16...form-father-v0.8.17) (2026-09-30)
 
 
